@@ -19,6 +19,7 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.Status;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -82,7 +83,7 @@ class ProxyListener extends Listener<InputStream> {
                 // proxy the response body
                 if (response.code() == 200) {
                   serverCall.sendHeaders(new Metadata());
-                  serverCall.sendMessage(response.body().byteStream());
+                  serverCall.sendMessage(new ByteArrayInputStream(response.body().bytes()));
                   serverCall.close(Status.OK, new Metadata());
                 } else if (response.code() == 404) {
                   serverCall.close(Status.UNIMPLEMENTED, new Metadata());
