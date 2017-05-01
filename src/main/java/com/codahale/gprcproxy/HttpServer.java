@@ -20,9 +20,13 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 /**
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
@@ -37,11 +41,9 @@ public class HttpServer {
       public void handle(String target, Request baseRequest, HttpServletRequest request,
           HttpServletResponse response) throws IOException, ServletException {
         final String method = baseRequest.getParameter("method");
-        System.out.println(method);
         if ("helloworld.Greeter/SayHello".equals(method)) {
           baseRequest.setHandled(true);
           final HelloRequest req = HelloRequest.parseFrom(request.getInputStream());
-          System.out.println("Saying hello to " + req + " at " + baseRequest);
           final HelloReply resp = HelloReply.newBuilder().setMessage("Hello " + req.getName())
                                             .build();
           response.setStatus(HttpServletResponse.SC_OK);
@@ -49,7 +51,12 @@ public class HttpServer {
         }
       }
     };
-    server.setHandler(handler);
+
+    final HandlerCollection handlers = new HandlerCollection();
+    final RequestLogHandler requestLogHandler = new RequestLogHandler();
+    requestLogHandler.setRequestLog(new NCSARequestLog());
+    handlers.setHandlers(new Handler[]{handler, requestLogHandler});
+    server.setHandler(handlers);
     server.start();
     server.join();
   }
