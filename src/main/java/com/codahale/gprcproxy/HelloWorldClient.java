@@ -20,6 +20,8 @@ import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,7 +66,13 @@ public class HelloWorldClient {
       if (args.length > 0) {
         user = args[0]; /* Use the arg as the name to greet if provided */
       }
-      client.greet(user);
+      final int requests = 10_000;
+      System.out.println("sending " + requests + " requests");
+      final Instant start = Instant.now();
+      for (int i = 0; i < requests; i++) {
+        client.greet(user);
+      }
+      System.out.println(requests + " requests in " + Duration.between(start, Instant.now()));
     } finally {
       client.shutdown();
     }
@@ -78,7 +86,7 @@ public class HelloWorldClient {
    * Say hello to server.
    */
   private void greet(String name) {
-    logger.info("Will try to greet " + name + " ...");
+    logger.fine("Will try to greet " + name + " ...");
     HelloRequest request = HelloRequest.newBuilder().setName(name).build();
     HelloReply response;
     try {
@@ -87,6 +95,6 @@ public class HelloWorldClient {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
       return;
     }
-    logger.info("Greeting: " + response.getMessage());
+    logger.fine("Greeting: " + response.getMessage());
   }
 }
