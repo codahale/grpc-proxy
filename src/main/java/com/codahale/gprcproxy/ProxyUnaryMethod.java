@@ -21,7 +21,6 @@ import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Request.Builder;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
@@ -43,11 +42,11 @@ class ProxyUnaryMethod implements UnaryMethod<byte[], byte[]> {
 
   @Override
   public void invoke(byte[] msg, StreamObserver<byte[]> responseObserver) {
-    final Request req = new Builder().url(url.newBuilder()
-                                             .addQueryParameter("method", methodName)
-                                             .build())
-                                     .post(RequestBody.create(OCTET_STREAM, msg))
-                                     .build();
+    final Request req = new Request.Builder().url(url.newBuilder()
+                                                     .addQueryParameter("method", methodName)
+                                                     .build())
+                                             .post(RequestBody.create(OCTET_STREAM, msg))
+                                             .build();
     try {
       try (Response response = client.newCall(req).execute()) {
         responseObserver.onNext(response.body().bytes());
