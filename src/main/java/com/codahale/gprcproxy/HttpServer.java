@@ -20,13 +20,9 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 
 /**
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
@@ -51,12 +47,7 @@ public class HttpServer {
         }
       }
     };
-
-    final HandlerCollection handlers = new HandlerCollection();
-    final RequestLogHandler requestLogHandler = new RequestLogHandler();
-    requestLogHandler.setRequestLog(new NCSARequestLog());
-    handlers.setHandlers(new Handler[]{handler, requestLogHandler});
-    server.setHandler(handlers);
+    server.setHandler(handler);
     server.start();
     server.join();
   }
