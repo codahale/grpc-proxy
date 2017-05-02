@@ -19,7 +19,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.Builder;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.ServerMethodDefinition;
-import java.io.InputStream;
+import io.grpc.stub.ServerCalls;
 import javax.annotation.Nullable;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -34,24 +34,22 @@ class DynamicHandlerRegistry extends HandlerRegistry {
 
   DynamicHandlerRegistry(HttpUrl url) {
     this.url = url;
-    this.client = new OkHttpClient();
+    this.client = new OkHttpClient.Builder().build();
   }
 
   @Override
   public ServerMethodDefinition<?, ?> lookupMethod(String methodName,
       @Nullable String authority) {
-    return ServerMethodDefinition.create(md(methodName),
-        (call, headers) -> new ProxyListener(client, url, methodName, call));
-  }
 
-  private MethodDescriptor<InputStream, InputStream> md(String methodName) {
-    final Builder<InputStream, InputStream> builder = MethodDescriptor.newBuilder();
-    builder.setRequestMarshaller(new StreamMarshaller());
-    builder.setResponseMarshaller(new StreamMarshaller());
-    builder.setType(MethodType.UNARY);
-    builder.setFullMethodName(methodName);
-    builder.setIdempotent(true); // is GET, DELETE, or PUT
-    builder.setSafe(true); // is GET
-    return builder.build();
+    final Builder<byte[], byte[]> md = MethodDescriptor.newBuilder();
+    md.setRequestMarshaller(new ByteArrayMarshaller());
+    md.setResponseMarshaller(new ByteArrayMarshaller());
+    md.setType(MethodType.UNARY);
+    md.setFullMethodName(methodName);
+//    md.setIdempotent(true); // is GET, DELETE, or PUT
+//    md.setSafe(true); // is GET
+
+    final DynamicUnaryCall handler = new DynamicUnaryCall(client, url, methodName);
+    return ServerMethodDefinition.create(md.build(), ServerCalls.asyncUnaryCall(handler));
   }
 }

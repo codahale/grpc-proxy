@@ -14,21 +14,28 @@
 
 package com.codahale.gprcproxy;
 
+import com.google.common.io.ByteStreams;
 import io.grpc.MethodDescriptor.Marshaller;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * A dumb marshaller which refuses to marshal.
  */
-class StreamMarshaller implements Marshaller<InputStream> {
+class ByteArrayMarshaller implements Marshaller<byte[]> {
 
   @Override
-  public InputStream stream(InputStream value) {
-    return value;
+  public InputStream stream(byte[] value) {
+    return new ByteArrayInputStream(value);
   }
 
   @Override
-  public InputStream parse(InputStream stream) {
-    return stream;
+  public byte[] parse(InputStream stream) {
+    try {
+      return ByteStreams.toByteArray(stream);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
