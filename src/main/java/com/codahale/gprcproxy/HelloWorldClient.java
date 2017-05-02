@@ -68,7 +68,7 @@ public class HelloWorldClient {
       final Instant start = Instant.now();
       final long greetings = IntStream.range(0, requests)
                                       .parallel()
-                                      .mapToObj(i -> client.greet("world " + i))
+                                      .mapToObj(client::greet)
                                       .count();
       System.out.println(greetings + " requests in " + Duration.between(start, Instant.now()));
     } finally {
@@ -83,8 +83,8 @@ public class HelloWorldClient {
   /**
    * Say hello to server.
    */
-  private String greet(String name) {
-    HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+  private String greet(int i) {
+    final HelloRequest request = HelloRequest.newBuilder().setName("world " + i).build();
     try {
       final HelloReply response = blockingStub.sayHello(request);
       return response.getMessage();

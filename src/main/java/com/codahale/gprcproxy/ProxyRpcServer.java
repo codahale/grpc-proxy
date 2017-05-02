@@ -28,27 +28,33 @@ public class ProxyRpcServer {
 
   private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
 
-  private Server server;
+  private final Server server;
+  private final int port;
+
+  private ProxyRpcServer(int port, HttpUrl backend) {
+    final HandlerRegistry registry = new ProxyHandlerRegistry(backend);
+    this.port = port;
+    this.server = ServerBuilder.forPort(port)
+                               .fallbackHandlerRegistry(registry)
+                               .build();
+  }
 
   /**
    * Main launches the server from the command line.
    */
   public static void main(String[] args) throws IOException, InterruptedException {
-    final ProxyRpcServer server = new ProxyRpcServer();
+    // The port on which the gRPC server should run.
+    int port = 50051;
+    // The URL of the HTTP server.
+    final HttpUrl backend = HttpUrl.parse("http://localhost:8080/grpc");
+
+    final ProxyRpcServer server = new ProxyRpcServer(port, backend);
     server.start();
     server.blockUntilShutdown();
   }
 
   private void start() throws IOException {
-    // The port on which the gRPC server should run.
-    int port = 50051;
-    // The URL of the HTTP server.
-    final HttpUrl backend = HttpUrl.parse("http://localhost:8080/grpc");
-    final HandlerRegistry registry = new ProxyHandlerRegistry(backend);
-    server = ServerBuilder.forPort(port)
-                          .fallbackHandlerRegistry(registry)
-                          .build()
-                          .start();
+    server.start();
     logger.info("Server started, listening on " + port);
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       // Use stderr here since the logger may have been reset by its JVM shutdown hook.
@@ -59,7 +65,7 @@ public class ProxyRpcServer {
   }
 
   private void stop() {
-    if (server != null) {
+    if (!server.isShutdown()) {
       server.shutdown();
     }
   }
