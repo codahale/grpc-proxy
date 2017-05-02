@@ -60,8 +60,6 @@ public class ProxyRpcServer {
   }
 
   private void blockUntilShutdown() throws InterruptedException {
-    if (server != null) {
-      server.awaitTermination();
-    }
+    server.awaitTermination();
   }
 }
