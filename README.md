@@ -1,6 +1,6 @@
 # gprc-proxy
 
-An experiment in writing a gRPC service proxy for functionality which is implemented in HTTP/1.1.
+An experiment in writing a gRPC proxy frontend for HTTP/protobuf services.
 
 ## No. Why.
 
@@ -30,6 +30,11 @@ This project has three moving parts:
 ## Should I use this
 
 Not in its current form, hell no. This is just a proof-of-concept.
+
+## Does it get better
+
+Yes. OkHttp is HTTP2-compatible, so if your weird PHP service is behind Nginx, you get free
+connection management, multiplexing, etc.
 
 ## License
 
