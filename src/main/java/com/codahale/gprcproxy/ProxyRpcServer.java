@@ -14,7 +14,6 @@
 
 package com.codahale.gprcproxy;
 
-import io.grpc.HandlerRegistry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
@@ -29,33 +28,23 @@ public class ProxyRpcServer {
   private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
 
   private final Server server;
-  private final int port;
 
   private ProxyRpcServer(int port, HttpUrl backend) {
-    final HandlerRegistry registry = new ProxyHandlerRegistry(backend);
-    this.port = port;
     this.server = ServerBuilder.forPort(port)
-                               .fallbackHandlerRegistry(registry)
+                               .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                .build();
   }
 
-  /**
-   * Main launches the server from the command line.
-   */
   public static void main(String[] args) throws IOException, InterruptedException {
-    // The port on which the gRPC server should run.
-    int port = 50051;
-    // The URL of the HTTP server.
-    final HttpUrl backend = HttpUrl.parse("http://localhost:8080/grpc");
-
-    final ProxyRpcServer server = new ProxyRpcServer(port, backend);
+    final ProxyRpcServer server = new ProxyRpcServer(50051,
+        HttpUrl.parse("http://localhost:8080/grpc"));
     server.start();
     server.blockUntilShutdown();
   }
 
   private void start() throws IOException {
     server.start();
-    logger.info("Server started, listening on " + port);
+    logger.info("Server started, listening on " + server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       // Use stderr here since the logger may have been reset by its JVM shutdown hook.
       System.err.println("*** shutting down gRPC server since JVM is shutting down");
@@ -70,13 +59,9 @@ public class ProxyRpcServer {
     }
   }
 
-  /**
-   * Await termination on the main thread since the grpc library uses daemon threads.
-   */
   private void blockUntilShutdown() throws InterruptedException {
     if (server != null) {
       server.awaitTermination();
     }
   }
-
 }
