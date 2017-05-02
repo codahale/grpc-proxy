@@ -27,12 +27,12 @@ import okhttp3.OkHttpClient;
 /**
  * A handler registry which maps gRPC service methods to proxy listeners.
  */
-class DynamicHandlerRegistry extends HandlerRegistry {
+class ProxyHandlerRegistry extends HandlerRegistry {
 
   private final HttpUrl url;
   private final OkHttpClient client;
 
-  DynamicHandlerRegistry(HttpUrl url) {
+  ProxyHandlerRegistry(HttpUrl url) {
     this.url = url;
     this.client = new OkHttpClient.Builder().build();
   }
@@ -49,7 +49,7 @@ class DynamicHandlerRegistry extends HandlerRegistry {
 //    md.setIdempotent(true); // is GET, DELETE, or PUT
 //    md.setSafe(true); // is GET
 
-    final DynamicUnaryCall handler = new DynamicUnaryCall(client, url, methodName);
+    final ProxyUnaryMethod handler = new ProxyUnaryMethod(client, url, methodName);
     return ServerMethodDefinition.create(md.build(), ServerCalls.asyncUnaryCall(handler));
   }
 }

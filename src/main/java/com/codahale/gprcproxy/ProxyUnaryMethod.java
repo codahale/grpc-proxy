@@ -26,14 +26,17 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-class DynamicUnaryCall implements UnaryMethod<byte[], byte[]> {
+/**
+ * Proxies a gRPC request to an HTTP backend.
+ */
+class ProxyUnaryMethod implements UnaryMethod<byte[], byte[]> {
 
   private static final MediaType OCTET_STREAM = MediaType.parse("application/octet-stream");
   private final OkHttpClient client;
   private final HttpUrl url;
   private final String methodName;
 
-  DynamicUnaryCall(OkHttpClient client, HttpUrl url, String methodName) {
+  ProxyUnaryMethod(OkHttpClient client, HttpUrl url, String methodName) {
     this.client = client;
     this.url = url;
     this.methodName = methodName;

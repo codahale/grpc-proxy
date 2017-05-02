@@ -44,7 +44,7 @@ public class ProxyRpcServer {
     int port = 50051;
     // The URL of the HTTP server.
     final HttpUrl backend = HttpUrl.parse("http://localhost:8080/grpc");
-    final HandlerRegistry registry = new DynamicHandlerRegistry(backend);
+    final HandlerRegistry registry = new ProxyHandlerRegistry(backend);
     server = ServerBuilder.forPort(port)
                           .fallbackHandlerRegistry(registry)
                           .build()
