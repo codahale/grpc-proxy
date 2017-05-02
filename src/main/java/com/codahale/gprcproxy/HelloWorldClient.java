@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 /**
  * A gRPC client. This could be in any language.
@@ -59,20 +60,17 @@ public class HelloWorldClient {
    * greeting.
    */
   public static void main(String[] args) throws Exception {
-    HelloWorldClient client = new HelloWorldClient("localhost", 50051);
+    /* Access a service running on the local machine on port 50051 */
+    final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
     try {
-      /* Access a service running on the local machine on port 50051 */
-      String user = "world";
-      if (args.length > 0) {
-        user = args[0]; /* Use the arg as the name to greet if provided */
-      }
       final int requests = 10_000;
-      System.out.println("sending " + requests + " requests");
+      System.out.println("sending " + requests + " requests in parallel");
       final Instant start = Instant.now();
-      for (int i = 0; i < requests; i++) {
-        client.greet(user);
-      }
-      System.out.println(requests + " requests in " + Duration.between(start, Instant.now()));
+      final long greetings = IntStream.range(0, requests)
+                                      .parallel()
+                                      .mapToObj(i -> client.greet("world " + i))
+                                      .count();
+      System.out.println(greetings + " requests in " + Duration.between(start, Instant.now()));
     } finally {
       client.shutdown();
     }
@@ -85,16 +83,14 @@ public class HelloWorldClient {
   /**
    * Say hello to server.
    */
-  private void greet(String name) {
-    logger.fine("Will try to greet " + name + " ...");
+  private String greet(String name) {
     HelloRequest request = HelloRequest.newBuilder().setName(name).build();
-    HelloReply response;
     try {
-      response = blockingStub.sayHello(request);
+      final HelloReply response = blockingStub.sayHello(request);
+      return response.getMessage();
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-      return;
+      return null;
     }
-    logger.fine("Greeting: " + response.getMessage());
   }
 }
