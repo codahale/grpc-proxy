@@ -37,9 +37,6 @@ public class HelloWorldClient {
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
-  /**
-   * Construct client connecting to HelloWorld server at {@code host:port}.
-   */
   private HelloWorldClient(String host, int port) {
     this(ManagedChannelBuilder.forAddress(host, port)
                               // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
@@ -47,18 +44,11 @@ public class HelloWorldClient {
                               .usePlaintext(true));
   }
 
-  /**
-   * Construct client for accessing RouteGuide server using the existing channel.
-   */
   private HelloWorldClient(ManagedChannelBuilder<?> channelBuilder) {
-    channel = channelBuilder.build();
-    blockingStub = GreeterGrpc.newBlockingStub(channel);
+    this.channel = channelBuilder.build();
+    this.blockingStub = GreeterGrpc.newBlockingStub(channel);
   }
 
-  /**
-   * Greet server. If provided, the first element of {@code args} is the name to use in the
-   * greeting.
-   */
   public static void main(String[] args) throws Exception {
     /* Access a service running on the local machine on port 50051 */
     final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
@@ -80,9 +70,6 @@ public class HelloWorldClient {
     channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
   }
 
-  /**
-   * Say hello to server.
-   */
   private String greet(int i) {
     final HelloRequest request = HelloRequest.newBuilder().setName("world " + i).build();
     try {
