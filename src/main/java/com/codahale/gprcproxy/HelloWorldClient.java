@@ -39,8 +39,8 @@ public class HelloWorldClient {
 
   private HelloWorldClient(String host, int port) {
     this(ManagedChannelBuilder.forAddress(host, port)
-                              // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-                              // needing certificates.
+                              // Channels are secure by default (via SSL/TLS). For the example we
+                              // disable TLS to avoid needing certificates.
                               .usePlaintext(true));
   }
 
