@@ -20,7 +20,11 @@ This project has three moving parts:
    runtime.
 2. A gRPC client which implements the client-side of that service, but not over HTTP/1.1. Just a
    bog-standard gRPC client. How ever will it talk to the HTTP/1.1 server?
-3. Our hero, a proxying gRPC server.
+3. Our hero, a proxying gRPC server. When a request comes in, it reads the Protobuf message without
+   attempting to decode it, proxies that to the backend (passing the gRPC service/method name as
+   a query parameter named `method`) in a `POST` request, reads the Protobuf response from the 
+   backend server without parsing it, and proxies the response back to the gRPC client. 
+   Surprisingly, this works.
 
 ## What's it use
 
