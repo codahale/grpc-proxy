@@ -46,9 +46,12 @@ public class HelloWorldClient {
 
   private HelloWorldClient(String host, int port) throws SSLException {
     final File tlsCert = Paths.get("cert.crt").toFile();
-    final SslContext sslContext = GrpcSslContexts
-        .configure(SslContextBuilder.forClient(), SslProvider.OPENSSL).trustManager(tlsCert)
-        .build();
+    final File tlsKey = Paths.get("cert.key").toFile();
+    final SslContextBuilder builder = SslContextBuilder.forClient();
+    final SslContext sslContext = GrpcSslContexts.configure(builder, SslProvider.OPENSSL)
+                                                 .trustManager(tlsCert)
+                                                 .keyManager(tlsCert, tlsKey)
+                                                 .build();
 
     this.channel = NettyChannelBuilder.forAddress(host, port).sslContext(sslContext).build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);

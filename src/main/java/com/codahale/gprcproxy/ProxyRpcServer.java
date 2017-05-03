@@ -17,6 +17,7 @@ package com.codahale.gprcproxy;
 import io.grpc.Server;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import java.io.File;
@@ -41,7 +42,10 @@ public class ProxyRpcServer {
     this.server = NettyServerBuilder.forPort(port)
                                     .sslContext(GrpcSslContexts
                                         .configure(SslContextBuilder.forServer(tlsCert, tlsKey),
-                                            SslProvider.OPENSSL).build())
+                                            SslProvider.OPENSSL)
+                                        .clientAuth(ClientAuth.REQUIRE)
+                                        .trustManager(tlsCert)
+                                        .build())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                     .build();
   }
