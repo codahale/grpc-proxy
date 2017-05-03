@@ -26,16 +26,17 @@ This project has three moving parts:
    backend server without parsing it, and proxies the response back to the gRPC client. 
    Surprisingly, this works.
 
-## What's it use
+## What's it use?
 
 * gRPC 1.3.0
 * OkHttp
+* mutual TLS via BoringSSL
 
-## Should I use this
+## Should I use this?
 
 Not in its current form, hell no. This is just a proof-of-concept.
 
-## Does it get better
+## Does it get better?
 
 Yes. OkHttp is HTTP2-compatible, so if your weird PHP service is behind Nginx, you get free
 connection management, multiplexing, etc.
