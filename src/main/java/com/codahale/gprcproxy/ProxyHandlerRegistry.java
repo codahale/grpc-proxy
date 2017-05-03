@@ -29,11 +29,11 @@ import okhttp3.OkHttpClient;
  */
 class ProxyHandlerRegistry extends HandlerRegistry {
 
-  private final HttpUrl url;
+  private final HttpUrl backend;
   private final OkHttpClient client;
 
-  ProxyHandlerRegistry(HttpUrl url) {
-    this.url = url;
+  ProxyHandlerRegistry(HttpUrl backend) {
+    this.backend = backend;
     this.client = new OkHttpClient.Builder().build();
   }
 
@@ -46,10 +46,8 @@ class ProxyHandlerRegistry extends HandlerRegistry {
     md.setResponseMarshaller(new ByteArrayMarshaller());
     md.setType(MethodType.UNARY);
     md.setFullMethodName(methodName);
-//    md.setIdempotent(true); // is GET, DELETE, or PUT
-//    md.setSafe(true); // is GET
 
-    final ProxyUnaryMethod handler = new ProxyUnaryMethod(client, url, methodName);
+    final ProxyUnaryMethod handler = new ProxyUnaryMethod(client, backend, methodName);
     return ServerMethodDefinition.create(md.build(), ServerCalls.asyncUnaryCall(handler));
   }
 }

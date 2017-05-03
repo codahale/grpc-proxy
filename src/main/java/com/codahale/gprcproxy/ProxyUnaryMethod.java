@@ -31,20 +31,20 @@ class ProxyUnaryMethod implements UnaryMethod<byte[], byte[]> {
 
   private static final MediaType OCTET_STREAM = MediaType.parse("application/octet-stream");
   private final OkHttpClient client;
-  private final HttpUrl url;
+  private final HttpUrl backend;
   private final String methodName;
 
-  ProxyUnaryMethod(OkHttpClient client, HttpUrl url, String methodName) {
+  ProxyUnaryMethod(OkHttpClient client, HttpUrl backend, String methodName) {
     this.client = client;
-    this.url = url;
+    this.backend = backend;
     this.methodName = methodName;
   }
 
   @Override
   public void invoke(byte[] msg, StreamObserver<byte[]> responseObserver) {
-    final Request req = new Request.Builder().url(url.newBuilder()
-                                                     .addQueryParameter("method", methodName)
-                                                     .build())
+    final Request req = new Request.Builder().url(backend.newBuilder()
+                                                         .addQueryParameter("method", methodName)
+                                                         .build())
                                              .post(RequestBody.create(OCTET_STREAM, msg))
                                              .build();
     try {
