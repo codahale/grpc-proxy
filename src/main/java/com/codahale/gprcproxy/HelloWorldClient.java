@@ -18,14 +18,21 @@ import com.codahale.grpcproxy.helloworld.GreeterGrpc;
 import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
+import java.io.File;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+import javax.net.ssl.SSLException;
 
 /**
  * A gRPC client. This could be in any language.
@@ -37,15 +44,13 @@ public class HelloWorldClient {
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
-  private HelloWorldClient(String host, int port) {
-    this(ManagedChannelBuilder.forAddress(host, port)
-                              // Channels are secure by default (via SSL/TLS). For the example we
-                              // disable TLS to avoid needing certificates.
-                              .usePlaintext(true));
-  }
+  private HelloWorldClient(String host, int port) throws SSLException {
+    final File tlsCert = Paths.get("cert.crt").toFile();
+    final SslContext sslContext = GrpcSslContexts
+        .configure(SslContextBuilder.forClient(), SslProvider.OPENSSL).trustManager(tlsCert)
+        .build();
 
-  private HelloWorldClient(ManagedChannelBuilder<?> channelBuilder) {
-    this.channel = channelBuilder.build();
+    this.channel = NettyChannelBuilder.forAddress(host, port).sslContext(sslContext).build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
   }
 

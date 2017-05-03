@@ -15,9 +15,15 @@
 package com.codahale.gprcproxy;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.NettyServerBuilder;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
 
 /**
@@ -29,10 +35,15 @@ public class ProxyRpcServer {
 
   private final Server server;
 
-  private ProxyRpcServer(int port, HttpUrl backend) {
-    this.server = ServerBuilder.forPort(port)
-                               .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
-                               .build();
+  private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
+    final File tlsCert = Paths.get("cert.crt").toFile();
+    final File tlsKey = Paths.get("cert.key").toFile();
+    this.server = NettyServerBuilder.forPort(port)
+                                    .sslContext(GrpcSslContexts
+                                        .configure(SslContextBuilder.forServer(tlsCert, tlsKey),
+                                            SslProvider.OPENSSL).build())
+                                    .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
+                                    .build();
   }
 
   public static void main(String[] args) throws IOException, InterruptedException {
