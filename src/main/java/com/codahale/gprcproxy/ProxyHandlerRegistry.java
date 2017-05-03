@@ -20,7 +20,9 @@ import io.grpc.MethodDescriptor.Builder;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.stub.ServerCalls;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import okhttp3.ConnectionPool;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
@@ -34,7 +36,9 @@ class ProxyHandlerRegistry extends HandlerRegistry {
 
   ProxyHandlerRegistry(HttpUrl backend) {
     this.backend = backend;
-    this.client = new OkHttpClient.Builder().build();
+    final OkHttpClient.Builder builder = new OkHttpClient.Builder();
+    this.client = builder.connectionPool(new ConnectionPool(100, 5, TimeUnit.MINUTES))
+                         .build();
   }
 
   @Override
