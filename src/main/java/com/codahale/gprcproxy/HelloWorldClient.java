@@ -19,13 +19,7 @@ import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
-import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslProvider;
-import java.io.File;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -45,15 +39,9 @@ public class HelloWorldClient {
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
   private HelloWorldClient(String host, int port) throws SSLException {
-    final File tlsCert = Paths.get("cert.crt").toFile();
-    final File tlsKey = Paths.get("cert.key").toFile();
-    final SslContextBuilder builder = SslContextBuilder.forClient();
-    final SslContext sslContext = GrpcSslContexts.configure(builder, SslProvider.OPENSSL)
-                                                 .trustManager(tlsCert)
-                                                 .keyManager(tlsCert, tlsKey)
-                                                 .build();
-
-    this.channel = NettyChannelBuilder.forAddress(host, port).sslContext(sslContext).build();
+    this.channel = NettyChannelBuilder.forAddress(host, port)
+                                      .sslContext(TLS.clientContext())
+                                      .build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
   }
 
