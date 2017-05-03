@@ -42,11 +42,9 @@ class ProxyUnaryMethod implements UnaryMethod<byte[], byte[]> {
 
   @Override
   public void invoke(byte[] msg, StreamObserver<byte[]> responseObserver) {
-    final Request req = new Request.Builder().url(backend.newBuilder()
-                                                         .addQueryParameter("method", methodName)
-                                                         .build())
-                                             .post(RequestBody.create(OCTET_STREAM, msg))
-                                             .build();
+    final HttpUrl url = backend.newBuilder().addQueryParameter("method", methodName).build();
+    final RequestBody body = RequestBody.create(OCTET_STREAM, msg);
+    final Request req = new Request.Builder().url(url).post(body).build();
     try {
       try (Response response = client.newCall(req).execute()) {
         responseObserver.onNext(response.body().bytes());
