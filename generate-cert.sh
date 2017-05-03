@@ -6,7 +6,7 @@ IFS=$'\n\t'
 openssl ecparam -out cert.key.x509 -name prime256v1 -genkey
 
 # Generate a self-signed certificate for the key.
-openssl req -new -x509 -sha256 -nodes -key cert.key.x509 -out cert.crt
+openssl req -new -x509 -sha256 -nodes -key cert.key.x509 -out cert.crt -batch -subj "/C=US/CN=localhost"
 
 # Convert the key for PKCS8 format.
 openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in cert.key.x509 -out cert.key
