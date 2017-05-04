@@ -36,9 +36,8 @@ class ProxyHandlerRegistry extends HandlerRegistry {
 
   ProxyHandlerRegistry(HttpUrl backend) {
     this.backend = backend;
-    final OkHttpClient.Builder builder = new OkHttpClient.Builder();
-    this.client = builder.connectionPool(new ConnectionPool(100, 5, TimeUnit.MINUTES))
-                         .build();
+    final ConnectionPool connectionPool = new ConnectionPool(100, 5, TimeUnit.MINUTES);
+    this.client = new OkHttpClient.Builder().connectionPool(connectionPool).build();
   }
 
   @Override
