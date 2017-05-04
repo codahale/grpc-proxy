@@ -16,7 +16,6 @@ package com.codahale.gprcproxy;
 
 import io.grpc.HandlerRegistry;
 import io.grpc.MethodDescriptor;
-import io.grpc.MethodDescriptor.Builder;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.stub.ServerCalls;
@@ -43,14 +42,13 @@ class ProxyHandlerRegistry extends HandlerRegistry {
   @Override
   public ServerMethodDefinition<?, ?> lookupMethod(String methodName,
       @Nullable String authority) {
-
-    final Builder<byte[], byte[]> md = MethodDescriptor.newBuilder();
-    md.setRequestMarshaller(new ByteArrayMarshaller());
-    md.setResponseMarshaller(new ByteArrayMarshaller());
-    md.setType(MethodType.UNARY);
-    md.setFullMethodName(methodName);
-
-    final ProxyUnaryMethod handler = new ProxyUnaryMethod(client, backend, methodName);
-    return ServerMethodDefinition.create(md.build(), ServerCalls.asyncUnaryCall(handler));
+    return ServerMethodDefinition.create(
+        MethodDescriptor.<byte[], byte[]>newBuilder()
+            .setRequestMarshaller(new ByteArrayMarshaller())
+            .setResponseMarshaller(new ByteArrayMarshaller())
+            .setType(MethodType.UNARY)
+            .setFullMethodName(methodName)
+            .build(),
+        ServerCalls.asyncUnaryCall(new ProxyUnaryMethod(client, backend, methodName)));
   }
 }
