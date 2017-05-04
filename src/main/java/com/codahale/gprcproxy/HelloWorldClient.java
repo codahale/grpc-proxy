@@ -50,16 +50,36 @@ public class HelloWorldClient {
     final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
     try {
       final int requests = 10_000;
+      System.out.println(client.greet(requests));
       System.out.println("sending " + requests + " requests in parallel");
       final Instant start = Instant.now();
-      final long greetings = IntStream.range(0, requests)
-                                      .parallel()
-                                      .mapToObj(client::greet)
-                                      .count();
-      System.out.println(greetings + " requests in " + Duration.between(start, Instant.now()));
+      final long[] durations = IntStream.range(0, requests)
+                                        .parallel()
+                                        .mapToLong(i -> {
+                                          final long rstart = System.nanoTime();
+                                          client.greet(i);
+                                          return System.nanoTime() - rstart;
+                                        })
+                                        .sorted()
+                                        .toArray();
+      final Duration duration = Duration.between(start, Instant.now());
+      final double rate = requests / (duration.toNanos() * 1e-9);
+      System.out.printf("%d requests in %s (%2.2f req/sec)\n", requests, duration, rate);
+      System.out.printf("p50 latency: %2.2fms\n", p(durations, 0.50));
+      System.out.printf("p75 latency: %2.2fms\n", p(durations, 0.75));
+      System.out.printf("p90 latency: %2.2fms\n", p(durations, 0.90));
+      System.out.printf("p95 latency: %2.2fms\n", p(durations, 0.95));
+      System.out.printf("p99 latency: %2.2fms\n", p(durations, 0.99));
+      System.out.printf("p999 latency: %2.2fms\n", p(durations, 0.999));
     } finally {
       client.shutdown();
     }
+  }
+
+  private static double p(long[] durations, double p) {
+    int low = (int) Math.floor(p * durations.length);
+    int high = (int) Math.ceil(p * durations.length);
+    return (durations[low] + durations[high]) / 2.0 * 1e-6;
   }
 
   private void shutdown() throws InterruptedException {
