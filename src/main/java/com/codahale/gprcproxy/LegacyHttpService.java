@@ -28,27 +28,29 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
  * in response bodies. Implements, in its own way, the {@code helloworld.Greeter} service.
  */
-public class HttpServer {
+public class LegacyHttpService extends AbstractHandler {
 
   public static void main(String[] args) throws Exception {
     final Server server = new Server(8080);
-    final AbstractHandler handler = new AbstractHandler() {
-      @Override
-      public void handle(String target, Request baseRequest, HttpServletRequest request,
-          HttpServletResponse response) throws IOException, ServletException {
-        final String method = baseRequest.getParameter("method");
-        if ("helloworld.Greeter/SayHello".equals(method)) {
-          baseRequest.setHandled(true);
-          final HelloRequest req = HelloRequest.parseFrom(request.getInputStream());
-          final HelloReply resp = HelloReply.newBuilder().setMessage("Hello " + req.getName())
-                                            .build();
-          response.setStatus(HttpServletResponse.SC_OK);
-          resp.writeTo(response.getOutputStream());
-        }
-      }
-    };
-    server.setHandler(handler);
+    server.setHandler(new LegacyHttpService());
     server.start();
-    server.join();
+  }
+
+  @Override
+  public void handle(String target, Request baseRequest, HttpServletRequest request,
+      HttpServletResponse response) throws IOException, ServletException {
+    final String method = baseRequest.getParameter("method");
+    if ("helloworld.Greeter/SayHello".equals(method)) {
+      baseRequest.setHandled(true);
+      sayHello(baseRequest, response);
+    }
+  }
+
+  private void sayHello(Request request, HttpServletResponse response)
+      throws IOException {
+    final HelloRequest req = HelloRequest.parseFrom(request.getInputStream());
+    final String greeting = "Hello " + req.getName();
+    final HelloReply resp = HelloReply.newBuilder().setMessage(greeting).build();
+    resp.writeTo(response.getOutputStream());
   }
 }
