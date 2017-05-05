@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -29,6 +30,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
 
   private final LongAdder requests = new LongAdder();
   private final LongAdder responseTime = new LongAdder();
+  private final AtomicLong timestamp = new AtomicLong();
   private final Recorder latency = new Recorder(3);
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
@@ -49,22 +51,33 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   }
 
   void start() {
-    executor.scheduleAtFixedRate(() -> {
-      final Histogram h = latency.getIntervalHistogram();
-      final long n = requests.sumThenReset();
-      System.out.printf("Stats at %s ==============\n", Instant.now());
-      System.out.printf("  Throughput: %d req/sec\n", n);
-      System.out.printf("  Avg Response Time: %2.4fs\n",
-          (double) responseTime.sumThenReset() / n * 1e-6);
-      System.out.printf("  p50:  %2.2fms\n", h.getValueAtPercentile(50) * 1e-3);
-      System.out.printf("  p75:  %2.2fms\n", h.getValueAtPercentile(75) * 1e-3);
-      System.out.printf("  p95:  %2.2fms\n", h.getValueAtPercentile(95) * 1e-3);
-      System.out.printf("  p99:  %2.2fms\n", h.getValueAtPercentile(99) * 1e-3);
-      System.out.printf("  p999: %2.2fms\n", h.getValueAtPercentile(99.9) * 1e-3);
-    }, 1, 1, TimeUnit.SECONDS);
+    timestamp.set(System.nanoTime());
+    executor.scheduleAtFixedRate(this::report, 1, 1, TimeUnit.SECONDS);
   }
 
   void stop() {
     executor.shutdown();
+  }
+
+  private void report() {
+    final double t = (System.nanoTime() - timestamp.getAndSet(System.nanoTime())) * 1e-9;
+    final Histogram h = latency.getIntervalHistogram();
+    final double x = requests.sumThenReset() / t;
+    final double r, n;
+    if (x == 0) {
+      r = n = 0;
+    } else {
+      r = (double) responseTime.sumThenReset() / x * 1e-6;
+      n = x * r;
+    }
+    System.out.printf("Stats at %s ==============\n", Instant.now());
+    System.out.printf("  Throughput: %2.2f req/sec\n", x);
+    System.out.printf("  Avg Response Time: %2.4fs\n", r);
+    System.out.printf("  Avg Concurrent Clients: %2.4fs\n", n);
+    System.out.printf("  p50:  %2.2fms\n", h.getValueAtPercentile(50) * 1e-3);
+    System.out.printf("  p75:  %2.2fms\n", h.getValueAtPercentile(75) * 1e-3);
+    System.out.printf("  p95:  %2.2fms\n", h.getValueAtPercentile(95) * 1e-3);
+    System.out.printf("  p99:  %2.2fms\n", h.getValueAtPercentile(99) * 1e-3);
+    System.out.printf("  p999: %2.2fms\n", h.getValueAtPercentile(99.9) * 1e-3);
   }
 }
