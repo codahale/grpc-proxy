@@ -17,6 +17,8 @@ package com.codahale.gprcproxy;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
@@ -28,13 +30,16 @@ public class ProxyRpcServer {
 
   private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
 
+  private final ExecutorService executor;
   private final Server server;
-  private final MetricsServerStreamTracer.Factory metrics;
+  private final StatsTracerFactory stats;
 
   private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
-    this.metrics = new MetricsServerStreamTracer.Factory();
+    this.executor = Executors.newFixedThreadPool(20);
+    this.stats = new StatsTracerFactory();
     this.server = NettyServerBuilder.forPort(port)
-                                    .addStreamTracerFactory(metrics)
+                                    .executor(executor)
+                                    .addStreamTracerFactory(stats)
                                     .sslContext(TLS.serverContext())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                     .build();
@@ -48,6 +53,7 @@ public class ProxyRpcServer {
   }
 
   private void start() throws IOException {
+    stats.start();
     server.start();
     logger.info("Server started, listening on " + server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -59,10 +65,11 @@ public class ProxyRpcServer {
   }
 
   private void stop() {
-    System.err.println(metrics);
+    stats.stop();
     if (!server.isShutdown()) {
       server.shutdown();
     }
+    executor.shutdown();
   }
 
   private void blockUntilShutdown() throws InterruptedException {

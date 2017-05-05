@@ -49,7 +49,7 @@ public class HelloWorldClient {
     /* Access a service running on the local machine on port 50051 */
     final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
     try {
-      final int requests = 10_000;
+      final int requests = 1_000_000;
       System.out.println(client.greet(requests));
       System.out.println("sending " + requests + " requests in parallel");
       final Instant start = Instant.now();
