@@ -41,9 +41,9 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
 
       @Override
       public void streamClosed(Status status) {
-        final long duration = System.nanoTime() - start;
+        final long duration = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - start);
         responseTime.add(duration);
-        latency.recordValue(TimeUnit.NANOSECONDS.toMicros(duration));
+        latency.recordValue(duration);
       }
     };
   }
@@ -55,7 +55,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
       System.out.printf("Stats at %s ==============\n", Instant.now());
       System.out.printf("  Throughput: %d req/sec\n", n);
       System.out.printf("  Avg Response Time: %2.4fs\n",
-          (double) responseTime.sumThenReset() / n * 1e-9);
+          (double) responseTime.sumThenReset() / n * 1e-6);
       System.out.printf("  p50:  %2.2fms\n", h.getValueAtPercentile(50) * 1e-3);
       System.out.printf("  p75:  %2.2fms\n", h.getValueAtPercentile(75) * 1e-3);
       System.out.printf("  p95:  %2.2fms\n", h.getValueAtPercentile(95) * 1e-3);
