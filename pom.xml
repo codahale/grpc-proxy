@@ -62,6 +62,11 @@
       <artifactId>jetty-server</artifactId>
       <version>9.4.5.v20170502</version>
     </dependency>
+    <dependency>
+      <groupId>org.hdrhistogram</groupId>
+      <artifactId>HdrHistogram</artifactId>
+      <version>2.1.9</version>
+    </dependency>
   </dependencies>
   <build>
     <extensions>

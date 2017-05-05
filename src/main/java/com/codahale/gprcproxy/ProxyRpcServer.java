@@ -29,9 +29,12 @@ public class ProxyRpcServer {
   private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
 
   private final Server server;
+  private final MetricsServerStreamTracer.Factory metrics;
 
   private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
+    this.metrics = new MetricsServerStreamTracer.Factory();
     this.server = NettyServerBuilder.forPort(port)
+                                    .addStreamTracerFactory(metrics)
                                     .sslContext(TLS.serverContext())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                     .build();
@@ -56,6 +59,7 @@ public class ProxyRpcServer {
   }
 
   private void stop() {
+    System.err.println(metrics);
     if (!server.isShutdown()) {
       server.shutdown();
     }

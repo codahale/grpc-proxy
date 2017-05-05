@@ -77,8 +77,8 @@ public class HelloWorldClient {
   }
 
   private static double p(long[] durations, double p) {
-    int low = (int) Math.floor(p * durations.length);
-    int high = (int) Math.ceil(p * durations.length);
+    int low = Math.max(0, (int) Math.floor(p * durations.length));
+    int high = Math.min((int) Math.ceil(p * durations.length), durations.length - 1);
     return (durations[low] + durations[high]) / 2.0 * 1e-6;
   }
 
