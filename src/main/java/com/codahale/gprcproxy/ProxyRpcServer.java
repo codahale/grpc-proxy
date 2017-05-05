@@ -19,6 +19,7 @@ import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
@@ -53,7 +54,7 @@ public class ProxyRpcServer {
   }
 
   private void start() throws IOException {
-    stats.start();
+    stats.start(1, TimeUnit.SECONDS);
     server.start();
     logger.info("Server started, listening on " + server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -26,12 +26,19 @@ import java.util.concurrent.atomic.LongAdder;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
+/**
+ * A stream tracer factory which measures throughput, concurrency, response time, and latency
+ * distribution.
+ */
 class StatsTracerFactory extends ServerStreamTracer.Factory {
+
+  private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
+  private static final long MAX_DURATION = TimeUnit.SECONDS.toMicros(30);
 
   private final LongAdder requests = new LongAdder();
   private final LongAdder responseTime = new LongAdder();
   private final AtomicLong timestamp = new AtomicLong();
-  private final Recorder latency = new Recorder(3);
+  private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 3);
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
   @Override
@@ -45,20 +52,30 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
       public void streamClosed(Status status) {
         final long duration = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - start);
         responseTime.add(duration);
-        latency.recordValue(duration);
+        try {
+          latency.recordValue(duration);
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+          // The duration was either < MIN_DURATION or > MAX_DURATION.
+        }
       }
     };
   }
 
-  void start() {
+  void start(long interval, TimeUnit intervalUnit) {
     timestamp.set(System.nanoTime());
-    executor.scheduleAtFixedRate(this::report, 1, 1, TimeUnit.SECONDS);
+    executor.scheduleAtFixedRate(this::report, interval, interval, intervalUnit);
   }
 
   void stop() {
     executor.shutdown();
   }
 
+  /**
+   * Calculate and report the three parameters of Little's Law and some latency percentiles.
+   *
+   * This just writes them to stdout, but presumably we'd be reporting them to a centralized
+   * service.
+   */
   private void report() {
     final double t = (System.nanoTime() - timestamp.getAndSet(System.nanoTime())) * 1e-9;
     final Histogram h = latency.getIntervalHistogram();
@@ -73,7 +90,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("  Throughput: %2.2f req/sec\n", x);
     System.out.printf("  Avg Response Time: %2.4fs\n", r);
-    System.out.printf("  Avg Concurrent Clients: %2.4fs\n", n);
+    System.out.printf("  Avg Concurrent Clients: %2.4f\n", n);
     System.out.printf("  p50:  %2.2fms\n", h.getValueAtPercentile(50) * 1e-3);
     System.out.printf("  p75:  %2.2fms\n", h.getValueAtPercentile(75) * 1e-3);
     System.out.printf("  p95:  %2.2fms\n", h.getValueAtPercentile(95) * 1e-3);
