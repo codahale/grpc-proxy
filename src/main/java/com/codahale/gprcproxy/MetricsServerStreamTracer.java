@@ -19,14 +19,15 @@ import io.grpc.ServerStreamTracer;
 import io.grpc.Status;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import org.HdrHistogram.ConcurrentHistogram;
+import org.HdrHistogram.Histogram;
+import org.HdrHistogram.Recorder;
 
 public class MetricsServerStreamTracer extends ServerStreamTracer {
 
-  private final ConcurrentHistogram latency;
+  private final Recorder latency;
   private final long start;
 
-  private MetricsServerStreamTracer(ConcurrentHistogram latency) {
+  private MetricsServerStreamTracer(Recorder latency) {
     this.latency = latency;
     this.start = System.nanoTime();
   }
@@ -39,7 +40,7 @@ public class MetricsServerStreamTracer extends ServerStreamTracer {
   public static class Factory extends ServerStreamTracer.Factory {
 
     private final LongAdder connections = new LongAdder();
-    private final ConcurrentHistogram latency = new ConcurrentHistogram(3);
+    private final Recorder latency = new Recorder(3);
 
     @Override
     public ServerStreamTracer newServerStreamTracer(String fullMethodName, Metadata headers) {
@@ -49,8 +50,9 @@ public class MetricsServerStreamTracer extends ServerStreamTracer {
 
     @Override
     public String toString() {
+      final Histogram h = latency.getIntervalHistogram();
       return String.format("%d connections, %2.2fms p99",
-          connections.sum(), latency.getValueAtPercentile(99) * 1e-3);
+          connections.sum(), h.getValueAtPercentile(99) * 1e-3);
     }
   }
 }
