@@ -40,6 +40,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private final AtomicLong timestamp = new AtomicLong();
   private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 3);
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+  private volatile Histogram histogram;
 
   @Override
   public ServerStreamTracer newServerStreamTracer(String fullMethodName, Metadata headers) {
@@ -78,7 +79,6 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
    */
   private void report() {
     final double t = (System.nanoTime() - timestamp.getAndSet(System.nanoTime())) * 1e-9;
-    final Histogram h = latency.getIntervalHistogram();
     final double x = requests.sumThenReset() / t;
     final double r, n;
     if (x == 0) {
@@ -87,14 +87,15 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
       r = (double) responseTime.sumThenReset() / x * 1e-6;
       n = x * r;
     }
+    histogram = latency.getIntervalHistogram(histogram);
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("  Throughput: %2.2f req/sec\n", x);
     System.out.printf("  Avg Response Time: %2.4fs\n", r);
     System.out.printf("  Avg Concurrent Clients: %2.4f\n", n);
-    System.out.printf("  p50:  %2.2fms\n", h.getValueAtPercentile(50) * 1e-3);
-    System.out.printf("  p75:  %2.2fms\n", h.getValueAtPercentile(75) * 1e-3);
-    System.out.printf("  p95:  %2.2fms\n", h.getValueAtPercentile(95) * 1e-3);
-    System.out.printf("  p99:  %2.2fms\n", h.getValueAtPercentile(99) * 1e-3);
-    System.out.printf("  p999: %2.2fms\n", h.getValueAtPercentile(99.9) * 1e-3);
+    System.out.printf("  p50:  %2.2fms\n", histogram.getValueAtPercentile(50) * 1e-3);
+    System.out.printf("  p75:  %2.2fms\n", histogram.getValueAtPercentile(75) * 1e-3);
+    System.out.printf("  p95:  %2.2fms\n", histogram.getValueAtPercentile(95) * 1e-3);
+    System.out.printf("  p99:  %2.2fms\n", histogram.getValueAtPercentile(99) * 1e-3);
+    System.out.printf("  p999: %2.2fms\n", histogram.getValueAtPercentile(99.9) * 1e-3);
   }
 }
