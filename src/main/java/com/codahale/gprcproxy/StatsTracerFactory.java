@@ -38,7 +38,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private final LongAdder requests = new LongAdder();
   private final LongAdder responseTime = new LongAdder();
   private final AtomicLong timestamp = new AtomicLong();
-  private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 3);
+  private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 1);
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
   private volatile Histogram histogram;
 
@@ -88,6 +88,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
       n = x * r;
     }
     histogram = latency.getIntervalHistogram(histogram);
+    System.out.println(histogram.getNeededByteBufferCapacity());
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("  Throughput: %2.2f req/sec\n", x);
     System.out.printf("  Avg Response Time: %2.4fs\n", r);
