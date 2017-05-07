@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.LongSupplier;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -39,7 +40,8 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private final LongAdder responseTime = new LongAdder();
   private final AtomicLong timestamp = new AtomicLong();
   private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 1);
-  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+  private final LongSupplier clock = System::nanoTime;
+  private ScheduledExecutorService executor;
   private volatile Histogram histogram;
 
   @Override
@@ -47,11 +49,11 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     requests.increment();
 
     return new ServerStreamTracer() {
-      final long start = System.nanoTime();
+      final long start = clock.getAsLong();
 
       @Override
       public void streamClosed(Status status) {
-        final long duration = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - start);
+        final long duration = TimeUnit.NANOSECONDS.toMicros(clock.getAsLong() - start);
         responseTime.add(duration);
         try {
           latency.recordValue(duration);
@@ -63,7 +65,8 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   }
 
   void start(long interval, TimeUnit intervalUnit) {
-    timestamp.set(System.nanoTime());
+    timestamp.set(clock.getAsLong());
+    executor = Executors.newSingleThreadScheduledExecutor();
     executor.scheduleAtFixedRate(this::report, interval, interval, intervalUnit);
   }
 
@@ -78,13 +81,14 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
    * service.
    */
   private void report() {
-    final double t = (System.nanoTime() - timestamp.getAndSet(System.nanoTime())) * 1e-9;
-    final double x = requests.sumThenReset() / t;
+    final long t = clock.getAsLong();
+    final double i = (t - timestamp.getAndSet(t)) * 1e-9;
+    final double x = requests.sumThenReset() / i;
     final double r, n;
     if (x == 0) {
       r = n = 0;
     } else {
-      r = (double) responseTime.sumThenReset() / t / x * 1e-6;
+      r = responseTime.sumThenReset() / i / x * 1e-6;
       n = x * r;
     }
     histogram = latency.getIntervalHistogram(histogram);
