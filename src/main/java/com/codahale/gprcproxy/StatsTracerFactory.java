@@ -14,18 +14,19 @@
 
 package com.codahale.gprcproxy;
 
+import com.codahale.gprcproxy.stats.Recorder;
+import com.codahale.gprcproxy.stats.Snapshot;
 import io.grpc.Metadata;
 import io.grpc.ServerStreamTracer;
 import io.grpc.Status;
 import java.time.Instant;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.function.LongSupplier;
-import org.HdrHistogram.Histogram;
-import org.HdrHistogram.Recorder;
 
 /**
  * A stream tracer factory which measures throughput, concurrency, response time, and latency
@@ -36,36 +37,26 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
   private static final long MAX_DURATION = TimeUnit.SECONDS.toMicros(30);
 
-  private final LongAdder requests = new LongAdder();
-  private final LongAdder responseTime = new LongAdder();
-  private final AtomicLong timestamp = new AtomicLong();
-  private final Recorder latency = new Recorder(MIN_DURATION, MAX_DURATION, 1);
-  private final LongSupplier clock = System::nanoTime;
+  private final com.codahale.gprcproxy.stats.Recorder all = newRecorder();
+  private final ConcurrentMap<String, Recorder> endpoints = new ConcurrentHashMap<>();
   private ScheduledExecutorService executor;
-  private volatile Histogram histogram;
 
   @Override
   public ServerStreamTracer newServerStreamTracer(String fullMethodName, Metadata headers) {
-    requests.increment();
 
     return new ServerStreamTracer() {
-      final long start = clock.getAsLong();
+      final long start = System.nanoTime();
+      final Recorder endpoint = endpoints.computeIfAbsent(fullMethodName, k -> newRecorder());
 
       @Override
       public void streamClosed(Status status) {
-        final long duration = TimeUnit.NANOSECONDS.toMicros(clock.getAsLong() - start);
-        responseTime.add(duration);
-        try {
-          latency.recordValue(duration);
-        } catch (ArrayIndexOutOfBoundsException ignored) {
-          // The duration was either < MIN_DURATION or > MAX_DURATION.
-        }
+        all.record(start);
+        endpoint.record(start);
       }
     };
   }
 
   void start(long interval, TimeUnit intervalUnit) {
-    timestamp.set(clock.getAsLong());
     executor = Executors.newSingleThreadScheduledExecutor();
     executor.scheduleAtFixedRate(this::report, interval, interval, intervalUnit);
   }
@@ -81,25 +72,35 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
    * service.
    */
   private void report() {
-    final long t = clock.getAsLong();
-    final double i = (t - timestamp.getAndSet(t)) * 1e-9;
-    final double x = requests.sumThenReset() / i;
-    final double r, n;
-    if (x == 0) {
-      r = n = 0;
-    } else {
-      r = responseTime.sumThenReset() / i / x * 1e-6;
-      n = x * r;
-    }
-    histogram = latency.getIntervalHistogram(histogram);
+    final Snapshot allStats = all.interval();
+    final Map<String, Snapshot> endpointStats = new TreeMap<>();
+    endpoints.forEach((method, recorder) -> {
+      endpointStats.put(method, recorder.interval());
+    });
+
     System.out.printf("Stats at %s ==============\n", Instant.now());
-    System.out.printf("  Throughput: %2.2f req/sec\n", x);
-    System.out.printf("  Avg Response Time: %2.4fs\n", r);
-    System.out.printf("  Avg Concurrent Clients: %2.4f\n", n);
-    System.out.printf("  p50:  %2.2fms\n", histogram.getValueAtPercentile(50) * 1e-3);
-    System.out.printf("  p75:  %2.2fms\n", histogram.getValueAtPercentile(75) * 1e-3);
-    System.out.printf("  p95:  %2.2fms\n", histogram.getValueAtPercentile(95) * 1e-3);
-    System.out.printf("  p99:  %2.2fms\n", histogram.getValueAtPercentile(99) * 1e-3);
-    System.out.printf("  p999: %2.2fms\n", histogram.getValueAtPercentile(99.9) * 1e-3);
+    System.out.printf("All endpoints:\n");
+    System.out.printf("  Throughput: %2.2f req/sec\n", allStats.throughput());
+    System.out.printf("  Avg Response Time: %2.4fs\n", allStats.latency());
+    System.out.printf("  Avg Concurrent Clients: %2.4f\n", allStats.concurrency());
+    System.out.printf("  p50:  %2.4fs\n", allStats.p50());
+    System.out.printf("  p90:  %2.4fs\n", allStats.p90());
+    System.out.printf("  p99:  %2.4fs\n", allStats.p99());
+    System.out.printf("  p999:  %2.4fs\n", allStats.p999());
+
+    endpointStats.forEach((method, stats) -> {
+      System.out.printf("%s:\n", method);
+      System.out.printf("  Throughput: %2.2f req/sec\n", stats.throughput());
+      System.out.printf("  Avg Response Time: %2.4fs\n", stats.latency());
+      System.out.printf("  Avg Concurrent Clients: %2.4f\n", stats.concurrency());
+      System.out.printf("  p50:  %2.4fs\n", stats.p50());
+      System.out.printf("  p90:  %2.4fs\n", stats.p90());
+      System.out.printf("  p99:  %2.4fs\n", stats.p99());
+      System.out.printf("  p999:  %2.4fs\n", stats.p999());
+    });
+  }
+
+  private Recorder newRecorder() {
+    return new Recorder(MIN_DURATION, MAX_DURATION, TimeUnit.MICROSECONDS);
   }
 }
