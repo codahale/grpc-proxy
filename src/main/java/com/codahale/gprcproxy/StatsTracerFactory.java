@@ -84,11 +84,10 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     if (x == 0) {
       r = n = 0;
     } else {
-      r = (double) responseTime.sumThenReset() / x * 1e-6;
+      r = (double) responseTime.sumThenReset() / t / x * 1e-6;
       n = x * r;
     }
     histogram = latency.getIntervalHistogram(histogram);
-    System.out.println(histogram.getNeededByteBufferCapacity());
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("  Throughput: %2.2f req/sec\n", x);
     System.out.printf("  Avg Response Time: %2.4fs\n", r);

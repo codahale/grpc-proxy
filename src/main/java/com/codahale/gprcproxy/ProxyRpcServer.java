@@ -54,7 +54,7 @@ public class ProxyRpcServer {
   }
 
   private void start() throws IOException {
-    stats.start(1, TimeUnit.SECONDS);
+    stats.start(1, TimeUnit.MINUTES);
     server.start();
     logger.info("Server started, listening on " + server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
