@@ -56,9 +56,9 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     };
   }
 
-  void start(long interval, TimeUnit intervalUnit) {
+  void start() {
     executor = Executors.newSingleThreadScheduledExecutor();
-    executor.scheduleAtFixedRate(this::report, interval, interval, intervalUnit);
+    executor.scheduleAtFixedRate(this::report, 1, 1, TimeUnit.SECONDS);
   }
 
   void stop() {
@@ -74,9 +74,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private void report() {
     final Snapshot allStats = all.interval();
     final Map<String, Snapshot> endpointStats = new TreeMap<>();
-    endpoints.forEach((method, recorder) -> {
-      endpointStats.put(method, recorder.interval());
-    });
+    endpoints.forEach((method, recorder) -> endpointStats.put(method, recorder.interval()));
 
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("All endpoints:\n");
