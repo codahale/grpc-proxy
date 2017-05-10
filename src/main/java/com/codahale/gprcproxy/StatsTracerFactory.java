@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * A stream tracer factory which measures throughput, concurrency, response time, and latency
@@ -37,8 +38,11 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
   private static final long MAX_DURATION = TimeUnit.SECONDS.toMicros(30);
 
+  private final LongAdder bytesIn = new LongAdder();
+  private final LongAdder bytesOut = new LongAdder();
   private final com.codahale.gprcproxy.stats.Recorder all = newRecorder();
   private final ConcurrentMap<String, Recorder> endpoints = new ConcurrentHashMap<>();
+  private volatile long timestamp = System.nanoTime();
   private ScheduledExecutorService executor;
 
   @Override
@@ -47,6 +51,16 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     return new ServerStreamTracer() {
       final long start = System.nanoTime();
       final Recorder endpoint = endpoints.computeIfAbsent(fullMethodName, k -> newRecorder());
+
+      @Override
+      public void outboundWireSize(long bytes) {
+        bytesOut.add(bytes);
+      }
+
+      @Override
+      public void inboundWireSize(long bytes) {
+        bytesIn.add(bytes);
+      }
 
       @Override
       public void streamClosed(Status status) {
@@ -72,12 +86,21 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
    * service.
    */
   private void report() {
+    final long sumBytesIn = bytesIn.sumThenReset();
+    final long sumBytesOut = bytesOut.sumThenReset();
+    final long t = System.nanoTime();
+    final double i = (t - timestamp) * 1e-9;
+    this.timestamp = t;
+    final double bytesPerSecIn = sumBytesIn / i;
+    final double bytesPerSecOut = sumBytesOut / i;
     final Snapshot allStats = all.interval();
     final Map<String, Snapshot> endpointStats = new TreeMap<>();
     endpoints.forEach((method, recorder) -> endpointStats.put(method, recorder.interval()));
 
     System.out.printf("Stats at %s ==============\n", Instant.now());
     System.out.printf("All endpoints:\n");
+    System.out.printf("  Bytes In: %2.2f bytes/sec\n", bytesPerSecIn);
+    System.out.printf("  Bytes Out: %2.2f bytes/sec\n", bytesPerSecOut);
     System.out.printf("  Throughput: %2.2f req/sec\n", allStats.throughput());
     System.out.printf("  Avg Response Time: %2.4fs\n", allStats.latency());
     System.out.printf("  Avg Concurrent Clients: %2.4f\n", allStats.concurrency());
