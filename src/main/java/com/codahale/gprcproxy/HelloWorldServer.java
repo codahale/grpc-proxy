@@ -1,0 +1,92 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.codahale.gprcproxy;
+
+import com.codahale.grpcproxy.helloworld.GreeterGrpc.GreeterImplBase;
+import com.codahale.grpcproxy.helloworld.HelloReply;
+import com.codahale.grpcproxy.helloworld.HelloRequest;
+import io.grpc.Server;
+import io.grpc.netty.NettyServerBuilder;
+import io.grpc.stub.StreamObserver;
+import io.netty.channel.EventLoopGroup;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+import javax.net.ssl.SSLException;
+
+public class HelloWorldServer {
+
+  private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
+
+  private final EventLoopGroup bossEventLoopGroup;
+  private final EventLoopGroup workerEventLoopGroup;
+  private final Server server;
+  private final StatsTracerFactory stats;
+
+  private HelloWorldServer(int port) throws SSLException {
+    this.stats = new StatsTracerFactory();
+    this.bossEventLoopGroup = Netty.newEventLoopGroup();
+    this.workerEventLoopGroup = Netty.newEventLoopGroup();
+    this.server = NettyServerBuilder.forPort(port)
+                                    .bossEventLoopGroup(bossEventLoopGroup)
+                                    .workerEventLoopGroup(workerEventLoopGroup)
+                                    .channelType(Netty.serverChannelType())
+                                    .addStreamTracerFactory(stats)
+                                    .sslContext(TLS.serverContext())
+                                    .addService(new GreeterImplBase() {
+                                      @Override
+                                      public void sayHello(HelloRequest request,
+                                          StreamObserver<HelloReply> responseObserver) {
+                                        final String message = "Hello " + request.getName();
+                                        responseObserver.onNext(HelloReply.newBuilder()
+                                                                          .setMessage(message)
+                                                                          .build());
+                                        responseObserver.onCompleted();
+                                      }
+                                    })
+                                    .build();
+  }
+
+  public static void main(String[] args) throws IOException, InterruptedException {
+    final HelloWorldServer server = new HelloWorldServer(50051);
+    server.start();
+    server.blockUntilShutdown();
+  }
+
+  private void start() throws IOException {
+    stats.start();
+    server.start();
+    logger.info("Server started, listening on " + server.getPort());
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      // Use stderr here since the logger may have been reset by its JVM shutdown hook.
+      System.err.println("*** shutting down gRPC server since JVM is shutting down");
+      HelloWorldServer.this.stop();
+      System.err.println("*** server shut down");
+    }));
+  }
+
+  private void stop() {
+    stats.stop();
+    if (!server.isShutdown()) {
+      server.shutdown();
+    }
+    bossEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
+    workerEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
+  }
+
+  private void blockUntilShutdown() throws InterruptedException {
+    server.awaitTermination();
+  }
+}
