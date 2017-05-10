@@ -59,6 +59,12 @@
       <classifier>${os.detected.classifier}</classifier>
     </dependency>
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-epoll</artifactId>
+      <version>4.1.8.Final</version>
+      <classifier>linux-x86_64</classifier>
+    </dependency>
+    <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
       <version>3.7.0</version>
@@ -101,6 +107,19 @@
             <goals>
               <goal>compile</goal>
               <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
             </goals>
           </execution>
         </executions>

@@ -16,9 +16,9 @@ package com.codahale.gprcproxy;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.EventLoopGroup;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
@@ -30,15 +30,19 @@ public class ProxyRpcServer {
 
   private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
 
-  private final ExecutorService executor;
+  private final EventLoopGroup bossEventLoopGroup;
+  private final EventLoopGroup workerEventLoopGroup;
   private final Server server;
   private final StatsTracerFactory stats;
 
   private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
-    this.executor = Executors.newFixedThreadPool(20);
     this.stats = new StatsTracerFactory();
+    this.bossEventLoopGroup = Netty.newEventLoopGroup();
+    this.workerEventLoopGroup = Netty.newEventLoopGroup();
     this.server = NettyServerBuilder.forPort(port)
-                                    .executor(executor)
+                                    .bossEventLoopGroup(bossEventLoopGroup)
+                                    .workerEventLoopGroup(workerEventLoopGroup)
+                                    .channelType(Netty.serverChannelType())
                                     .addStreamTracerFactory(stats)
                                     .sslContext(TLS.serverContext())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
@@ -69,7 +73,8 @@ public class ProxyRpcServer {
     if (!server.isShutdown()) {
       server.shutdown();
     }
-    executor.shutdown();
+    bossEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
+    workerEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
   }
 
   private void blockUntilShutdown() throws InterruptedException {

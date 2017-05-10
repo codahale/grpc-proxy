@@ -20,6 +20,7 @@ import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyChannelBuilder;
+import io.netty.channel.EventLoopGroup;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -35,11 +36,15 @@ public class HelloWorldClient {
 
   private static final Logger logger = Logger.getLogger(HelloWorldClient.class.getName());
 
+  private final EventLoopGroup eventLoopGroup;
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
   private HelloWorldClient(String host, int port) throws SSLException {
+    this.eventLoopGroup = Netty.newEventLoopGroup();
     this.channel = NettyChannelBuilder.forAddress(host, port)
+                                      .eventLoopGroup(eventLoopGroup)
+                                      .channelType(Netty.clientChannelType())
                                       .sslContext(TLS.clientContext())
                                       .build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
@@ -84,6 +89,7 @@ public class HelloWorldClient {
 
   private void shutdown() throws InterruptedException {
     channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    eventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
   }
 
   private String greet(int i) {
