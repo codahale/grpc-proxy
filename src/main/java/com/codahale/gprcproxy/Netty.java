@@ -27,6 +27,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 
 class Netty {
 
+  private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors() * 2;
+
   static {
     if (Epoll.isAvailable()) {
       System.out.println("Using epoll");
@@ -35,11 +37,18 @@ class Netty {
     }
   }
 
-  static EventLoopGroup newEventLoopGroup() {
+  static EventLoopGroup newBossEventLoopGroup() {
     if (Epoll.isAvailable()) {
       return new EpollEventLoopGroup();
     }
     return new NioEventLoopGroup();
+  }
+
+  static EventLoopGroup newWorkerEventLoopGroup() {
+    if (Epoll.isAvailable()) {
+      return new EpollEventLoopGroup(WORKER_THREADS);
+    }
+    return new NioEventLoopGroup(WORKER_THREADS);
   }
 
   static Class<? extends ServerChannel> serverChannelType() {

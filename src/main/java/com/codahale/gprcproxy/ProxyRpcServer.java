@@ -37,8 +37,8 @@ public class ProxyRpcServer {
 
   private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
     this.stats = new StatsTracerFactory();
-    this.bossEventLoopGroup = Netty.newEventLoopGroup();
-    this.workerEventLoopGroup = Netty.newEventLoopGroup();
+    this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
+    this.workerEventLoopGroup = Netty.newWorkerEventLoopGroup();
     this.server = NettyServerBuilder.forPort(port)
                                     .bossEventLoopGroup(bossEventLoopGroup)
                                     .workerEventLoopGroup(workerEventLoopGroup)

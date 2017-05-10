@@ -41,7 +41,7 @@ public class HelloWorldClient {
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
   private HelloWorldClient(String host, int port) throws SSLException {
-    this.eventLoopGroup = Netty.newEventLoopGroup();
+    this.eventLoopGroup = Netty.newWorkerEventLoopGroup();
     this.channel = NettyChannelBuilder.forAddress(host, port)
                                       .eventLoopGroup(eventLoopGroup)
                                       .channelType(Netty.clientChannelType())
