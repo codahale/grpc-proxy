@@ -41,7 +41,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
 
   private final IntervalAdder bytesIn = new IntervalAdder();
   private final IntervalAdder bytesOut = new IntervalAdder();
-  private final com.codahale.gprcproxy.stats.Recorder all = newRecorder();
+  private final Recorder all = newRecorder();
   private final ConcurrentMap<String, Recorder> endpoints = new ConcurrentHashMap<>();
   private ScheduledExecutorService executor;
 
