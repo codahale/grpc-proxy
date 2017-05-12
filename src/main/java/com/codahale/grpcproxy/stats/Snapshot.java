@@ -12,14 +12,27 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy.stats;
+package com.codahale.grpcproxy.stats;
 
 import com.google.auto.value.AutoValue;
 
 @AutoValue
-public abstract class IntervalCount {
-
-  public abstract double mean();
+public abstract class Snapshot {
 
   public abstract long count();
+
+  public abstract double throughput();
+
+  public abstract double concurrency();
+
+  public abstract double latency();
+
+  public abstract double p50();
+
+  public abstract double p90();
+
+  public abstract double p99();
+
+  public abstract double p999();
 }
+

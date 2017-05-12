@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy;
+package com.codahale.grpcproxy;
 
 import com.codahale.grpcproxy.helloworld.GreeterGrpc;
 import com.codahale.grpcproxy.helloworld.HelloReply;

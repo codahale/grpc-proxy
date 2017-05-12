@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy;
+package com.codahale.grpcproxy;
 
 import io.grpc.HandlerRegistry;
 import io.grpc.MethodDescriptor;

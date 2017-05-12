@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy.stats;
+package com.codahale.grpcproxy.stats;
 
 import java.util.concurrent.atomic.LongAdder;
 

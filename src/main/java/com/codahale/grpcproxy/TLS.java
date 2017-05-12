@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy;
+package com.codahale.grpcproxy;
 
 import static io.netty.handler.ssl.SslProvider.OPENSSL;
 

@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy;
+package com.codahale.grpcproxy;
 
 import com.google.common.io.ByteStreams;
 import io.grpc.MethodDescriptor.Marshaller;

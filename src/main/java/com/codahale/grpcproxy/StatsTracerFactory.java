@@ -12,12 +12,12 @@
  * limitations under the License.
  */
 
-package com.codahale.gprcproxy;
+package com.codahale.grpcproxy;
 
-import com.codahale.gprcproxy.stats.IntervalAdder;
-import com.codahale.gprcproxy.stats.IntervalCount;
-import com.codahale.gprcproxy.stats.Recorder;
-import com.codahale.gprcproxy.stats.Snapshot;
+import com.codahale.grpcproxy.stats.IntervalAdder;
+import com.codahale.grpcproxy.stats.IntervalCount;
+import com.codahale.grpcproxy.stats.Recorder;
+import com.codahale.grpcproxy.stats.Snapshot;
 import io.grpc.Metadata;
 import io.grpc.ServerStreamTracer;
 import io.grpc.Status;
