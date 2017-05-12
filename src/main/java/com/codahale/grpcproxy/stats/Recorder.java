@@ -15,9 +15,12 @@
 package com.codahale.grpcproxy.stats;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import org.HdrHistogram.Histogram;
 
 public class Recorder {
+
+  private static final Logger LOGGER = Logger.getLogger(Recorder.class.getCanonicalName());
 
   private final IntervalAdder count;
   private final IntervalAdder responseTime;
@@ -32,15 +35,14 @@ public class Recorder {
     this.histogram = latency.getIntervalHistogram(); // preload reporting histogram
   }
 
-  public boolean record(long startNanoTime) {
+  public void record(long startNanoTime) {
     final long duration = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - startNanoTime);
     count.add(1);
     responseTime.add(duration);
     try {
       latency.recordValue(duration);
-      return true;
     } catch (ArrayIndexOutOfBoundsException ignored) {
-      return false;
+      LOGGER.warning("Very slow value: " + duration + "us");
     }
   }
 
