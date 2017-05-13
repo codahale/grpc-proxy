@@ -15,12 +15,13 @@
 package com.codahale.grpcproxy.stats;
 
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import org.HdrHistogram.Histogram;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Recorder {
 
-  private static final Logger LOGGER = Logger.getLogger(Recorder.class.getCanonicalName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(Recorder.class.getCanonicalName());
 
   private final IntervalAdder count;
   private final IntervalAdder responseTime;
@@ -42,7 +43,7 @@ public class Recorder {
     try {
       latency.recordValue(duration);
     } catch (ArrayIndexOutOfBoundsException ignored) {
-      LOGGER.warning("Very slow value: " + duration + "us");
+      LOGGER.warn("Very slow value: {}us", duration);
     }
   }
 
