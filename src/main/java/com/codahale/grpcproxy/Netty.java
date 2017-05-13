@@ -24,16 +24,19 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class Netty {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Netty.class);
   private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
   static {
     if (Epoll.isAvailable()) {
-      System.out.println("Using epoll");
+      LOGGER.info("Using epoll");
     } else {
-      System.out.println("Using java.nio");
+      LOGGER.info("Using java.nio");
     }
   }
 

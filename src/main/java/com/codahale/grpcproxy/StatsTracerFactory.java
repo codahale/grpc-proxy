@@ -15,20 +15,20 @@
 package com.codahale.grpcproxy;
 
 import com.codahale.grpcproxy.stats.IntervalAdder;
-import com.codahale.grpcproxy.stats.IntervalCount;
 import com.codahale.grpcproxy.stats.Recorder;
-import com.codahale.grpcproxy.stats.Snapshot;
 import io.grpc.Metadata;
 import io.grpc.ServerStreamTracer;
 import io.grpc.Status;
-import java.time.Instant;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import net.logstash.logback.marker.LogstashMarker;
+import net.logstash.logback.marker.Markers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A stream tracer factory which measures throughput, concurrency, response time, and latency
@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
  */
 class StatsTracerFactory extends ServerStreamTracer.Factory {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(StatsTracerFactory.class);
   private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
   private static final long MAX_DURATION = TimeUnit.SECONDS.toMicros(30);
 
@@ -86,34 +87,13 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
    * service.
    */
   private void report() {
-    final IntervalCount bytesInCount = bytesIn.interval();
-    final IntervalCount bytesOutCount = bytesOut.interval();
-    final Snapshot allStats = all.interval();
-    final Map<String, Snapshot> endpointStats = new TreeMap<>();
-    endpoints.forEach((method, recorder) -> endpointStats.put(method, recorder.interval()));
-
-    System.out.printf("Stats at %s ==============\n", Instant.now());
-    System.out.printf("All endpoints:\n");
-    System.out.printf("  Bytes In: %2.2f MiB/sec\n", bytesInCount.mean() / 1024 / 1024);
-    System.out.printf("  Bytes Out: %2.2f MiB/sec\n", bytesOutCount.mean() / 1024 / 1024);
-    System.out.printf("  Throughput: %2.2f req/sec\n", allStats.throughput());
-    System.out.printf("  Avg Response Time: %2.4fs\n", allStats.latency());
-    System.out.printf("  Avg Concurrent Clients: %2.4f\n", allStats.concurrency());
-    System.out.printf("  p50:  %2.4fs\n", allStats.p50());
-    System.out.printf("  p90:  %2.4fs\n", allStats.p90());
-    System.out.printf("  p99:  %2.4fs\n", allStats.p99());
-    System.out.printf("  p999:  %2.4fs\n", allStats.p999());
-
-    endpointStats.forEach((method, stats) -> {
-      System.out.printf("%s:\n", method);
-      System.out.printf("  Throughput: %2.2f req/sec\n", stats.throughput());
-      System.out.printf("  Avg Response Time: %2.4fs\n", stats.latency());
-      System.out.printf("  Avg Concurrent Clients: %2.4f\n", stats.concurrency());
-      System.out.printf("  p50:  %2.4fs\n", stats.p50());
-      System.out.printf("  p90:  %2.4fs\n", stats.p90());
-      System.out.printf("  p99:  %2.4fs\n", stats.p99());
-      System.out.printf("  p999:  %2.4fs\n", stats.p999());
-    });
+    LogstashMarker marker = Markers.append("all", all.interval())
+                                   .and(Markers.append("bytes_in", bytesIn.interval()))
+                                   .and(Markers.append("bytes_out", bytesOut.interval()));
+    for (Entry<String, Recorder> entry : endpoints.entrySet()) {
+      marker = marker.and(Markers.append(entry.getKey(), entry.getValue().interval()));
+    }
+    LOGGER.info(marker, "stats");
   }
 
   private Recorder newRecorder() {

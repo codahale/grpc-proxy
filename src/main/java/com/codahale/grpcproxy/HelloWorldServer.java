@@ -23,12 +23,14 @@ import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 public class HelloWorldServer {
 
-  private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRpcServer.class);
 
   private final EventLoopGroup bossEventLoopGroup;
   private final EventLoopGroup workerEventLoopGroup;
@@ -60,6 +62,8 @@ public class HelloWorldServer {
   }
 
   public static void main(String[] args) throws IOException, InterruptedException {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
     final HelloWorldServer server = new HelloWorldServer(50051);
     server.start();
     server.blockUntilShutdown();
@@ -68,7 +72,7 @@ public class HelloWorldServer {
   private void start() throws IOException {
     stats.start();
     server.start();
-    logger.info("Server started, listening on " + server.getPort());
+    LOGGER.info("Server started, listening on {}", server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       // Use stderr here since the logger may have been reset by its JVM shutdown hook.
       System.err.println("*** shutting down gRPC server since JVM is shutting down");

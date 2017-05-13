@@ -50,12 +50,12 @@ public class Recorder {
     final IntervalCount requestCount = count.interval();
     final IntervalCount responseTimeCount = responseTime.interval();
     final long c = requestCount.count();
-    final double x = requestCount.mean();
+    final double x = requestCount.rate();
     final double r, n;
     if (c == 0) {
       r = n = 0;
     } else {
-      r = responseTimeCount.mean() / c * 1e-6;
+      r = responseTimeCount.rate() / c * 1e-6;
       n = x * r;
     }
     this.histogram = latency.getIntervalHistogram(histogram);

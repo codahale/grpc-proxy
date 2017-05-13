@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
@@ -31,6 +32,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class LegacyHttpService extends AbstractHandler {
 
   public static void main(String[] args) throws Exception {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
     final Server server = new Server(8080);
     server.setHandler(new LegacyHttpService());
     server.start();

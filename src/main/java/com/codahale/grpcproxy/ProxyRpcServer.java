@@ -19,16 +19,18 @@ import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * A gRPC server which proxies requests to an HTTP/1.1 backend server.
  */
 public class ProxyRpcServer {
 
-  private static final Logger logger = Logger.getLogger(ProxyRpcServer.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRpcServer.class);
 
   private final EventLoopGroup bossEventLoopGroup;
   private final EventLoopGroup workerEventLoopGroup;
@@ -50,6 +52,8 @@ public class ProxyRpcServer {
   }
 
   public static void main(String[] args) throws IOException, InterruptedException {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
     final ProxyRpcServer server = new ProxyRpcServer(50051,
         HttpUrl.parse("http://localhost:8080/grpc"));
     server.start();
@@ -59,7 +63,7 @@ public class ProxyRpcServer {
   private void start() throws IOException {
     stats.start();
     server.start();
-    logger.info("Server started, listening on " + server.getPort());
+    LOGGER.info("Server started, listening on " + server.getPort());
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       // Use stderr here since the logger may have been reset by its JVM shutdown hook.
       System.err.println("*** shutting down gRPC server since JVM is shutting down");

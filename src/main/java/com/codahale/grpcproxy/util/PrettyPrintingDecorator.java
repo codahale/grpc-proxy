@@ -12,17 +12,16 @@
  * limitations under the License.
  */
 
-package com.codahale.grpcproxy.stats;
+package com.codahale.grpcproxy.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.auto.value.AutoValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import net.logstash.logback.decorate.JsonGeneratorDecorator;
 
-@AutoValue
-public abstract class IntervalCount {
+public class PrettyPrintingDecorator implements JsonGeneratorDecorator {
 
-  @JsonProperty
-  public abstract double rate();
+  @Override
+  public JsonGenerator decorate(JsonGenerator generator) {
+    return generator.useDefaultPrettyPrinter();
+  }
 
-  @JsonProperty
-  public abstract long count();
 }

@@ -14,25 +14,34 @@
 
 package com.codahale.grpcproxy.stats;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class Snapshot {
 
+  @JsonProperty
   public abstract long count();
 
+  @JsonProperty
   public abstract double throughput();
 
+  @JsonProperty
   public abstract double concurrency();
 
+  @JsonProperty
   public abstract double latency();
 
+  @JsonProperty
   public abstract double p50();
 
+  @JsonProperty
   public abstract double p90();
 
+  @JsonProperty
   public abstract double p99();
 
+  @JsonProperty
   public abstract double p999();
 }
 

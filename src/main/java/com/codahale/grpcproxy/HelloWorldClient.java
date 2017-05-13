@@ -17,24 +17,30 @@ package com.codahale.grpcproxy;
 import com.codahale.grpcproxy.helloworld.GreeterGrpc;
 import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
+import com.codahale.grpcproxy.stats.Recorder;
+import com.codahale.grpcproxy.stats.Snapshot;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.channel.EventLoopGroup;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
 import javax.net.ssl.SSLException;
+import net.logstash.logback.marker.Markers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * A gRPC client. This could be in any language.
  */
 public class HelloWorldClient {
 
-  private static final Logger logger = Logger.getLogger(HelloWorldClient.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldClient.class);
 
   private final EventLoopGroup eventLoopGroup;
   private final ManagedChannel channel;
@@ -51,40 +57,42 @@ public class HelloWorldClient {
   }
 
   public static void main(String[] args) throws Exception {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+
     /* Access a service running on the local machine on port 50051 */
     final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
     try {
-      final int requests = 1_000_000;
-      System.out.println(client.greet(requests));
-      System.out.println("sending " + requests + " requests in parallel");
+      final Map<String, String> env = System.getenv();
+      final int requests = Integer.parseInt(env.getOrDefault("REQUESTS", "1000000"));
+      final int threads = Integer.parseInt(env.getOrDefault("THREADS", "20"));
+      final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
+          TimeUnit.MICROSECONDS);
+      LOGGER.info("Initial request: {}", client.greet(requests));
+      LOGGER.info("Sending {} requests from {} threads", requests, threads);
+
+      final ExecutorService threadPool = Executors.newFixedThreadPool(threads);
       final Instant start = Instant.now();
-      final long[] durations = IntStream.range(0, requests)
-                                        .parallel()
-                                        .mapToLong(i -> {
-                                          final long rstart = System.nanoTime();
-                                          client.greet(i);
-                                          return System.nanoTime() - rstart;
-                                        })
-                                        .sorted()
-                                        .toArray();
+      for (int i = 0; i < threads; i++) {
+        threadPool.submit(() -> {
+          for (int j = 0; j < requests / threads; j++) {
+            final long t = System.nanoTime();
+            client.greet(j);
+            recorder.record(t);
+          }
+        });
+      }
+      threadPool.shutdown();
+      threadPool.awaitTermination(20, TimeUnit.MINUTES);
+
+      final Snapshot stats = recorder.interval();
       final Duration duration = Duration.between(start, Instant.now());
-      final double rate = requests / (duration.toNanos() * 1e-9);
-      System.out.printf("%d requests in %s (%2.2f req/sec)\n", requests, duration, rate);
-      System.out.printf("p50 latency: %2.2fms\n", p(durations, 0.50));
-      System.out.printf("p75 latency: %2.2fms\n", p(durations, 0.75));
-      System.out.printf("p90 latency: %2.2fms\n", p(durations, 0.90));
-      System.out.printf("p95 latency: %2.2fms\n", p(durations, 0.95));
-      System.out.printf("p99 latency: %2.2fms\n", p(durations, 0.99));
-      System.out.printf("p999 latency: %2.2fms\n", p(durations, 0.999));
+      LOGGER.info(Markers.append("stats", stats)
+                         .and(Markers.append("duration", duration.toString())),
+          "{} requests in {} ({} req/sec)", stats.count(), duration, stats.throughput());
     } finally {
       client.shutdown();
     }
-  }
-
-  private static double p(long[] durations, double p) {
-    int low = Math.max(0, (int) Math.floor(p * durations.length));
-    int high = Math.min((int) Math.ceil(p * durations.length), durations.length - 1);
-    return (durations[low] + durations[high]) / 2.0 * 1e-6;
   }
 
   private void shutdown() throws InterruptedException {
@@ -98,7 +106,7 @@ public class HelloWorldClient {
       final HelloReply response = blockingStub.sayHello(request);
       return response.getMessage();
     } catch (StatusRuntimeException e) {
-      logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+      LOGGER.warn("RPC failed: {}", e.getStatus());
       return null;
     }
   }
