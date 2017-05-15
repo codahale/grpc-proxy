@@ -17,12 +17,16 @@ package com.codahale.grpcproxy;
 import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import java.io.IOException;
+import java.util.concurrent.Executors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
@@ -34,8 +38,15 @@ public class LegacyHttpService extends AbstractHandler {
   public static void main(String[] args) throws Exception {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
-    final Server server = new Server(8080);
+
+    final ThreadPool threadPool = new ExecutorThreadPool(Executors.newCachedThreadPool());
+    final Server server = new Server(threadPool);
     server.setHandler(new LegacyHttpService());
+
+    final ServerConnector connector = new ServerConnector(server);
+    connector.setPort(8080);
+    server.addConnector(connector);
+
     server.start();
   }
 
