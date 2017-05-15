@@ -63,7 +63,7 @@ public class Recorder {
     } else {
       r = responseTimeCount.rate() / c * 1e-6;
       n = x * r;
-      apdex = (satisfied + (tolerating / 2.0)) / c;
+      apdex = Math.min(1.0, (satisfied + (tolerating / 2.0)) / c);
     }
     return new AutoValue_Snapshot(c, x, n, r,
         histogram.getValueAtPercentile(50) * 1e-6,
