@@ -38,6 +38,7 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StatsTracerFactory.class);
   private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
+  private static final long GOAL_DURATION = TimeUnit.MILLISECONDS.toMicros(10);
   private static final long MAX_DURATION = TimeUnit.SECONDS.toMicros(30);
 
   private final IntervalAdder bytesIn = new IntervalAdder();
@@ -97,6 +98,6 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
   }
 
   private Recorder newRecorder() {
-    return new Recorder(MIN_DURATION, MAX_DURATION, TimeUnit.MICROSECONDS);
+    return new Recorder(MIN_DURATION, MAX_DURATION, GOAL_DURATION, TimeUnit.MICROSECONDS);
   }
 }

@@ -67,7 +67,7 @@ public class HelloWorldClient {
       final int requests = Integer.parseInt(env.getOrDefault("REQUESTS", "1000000"));
       final int threads = Integer.parseInt(env.getOrDefault("THREADS", "20"));
       final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
-          TimeUnit.MICROSECONDS);
+          TimeUnit.MILLISECONDS.toMicros(10), TimeUnit.MICROSECONDS);
       LOGGER.info("Initial request: {}", client.greet(requests));
       LOGGER.info("Sending {} requests from {} threads", requests, threads);
 

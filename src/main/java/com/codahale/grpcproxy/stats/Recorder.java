@@ -26,9 +26,11 @@ public class Recorder {
   private final IntervalAdder count;
   private final IntervalAdder responseTime;
   private final org.HdrHistogram.Recorder latency;
+  private final long goalLatency;
   private volatile Histogram histogram;
 
-  public Recorder(long minLatency, long maxLatency, TimeUnit latencyUnit) {
+  public Recorder(long minLatency, long maxLatency, long goalLatency, TimeUnit latencyUnit) {
+    this.goalLatency = latencyUnit.toMicros(goalLatency);
     this.count = new IntervalAdder();
     this.responseTime = new IntervalAdder();
     this.latency = new org.HdrHistogram.Recorder(latencyUnit.toMicros(minLatency),
@@ -52,18 +54,22 @@ public class Recorder {
     final IntervalCount responseTimeCount = responseTime.interval();
     final long c = requestCount.count();
     final double x = requestCount.rate();
-    final double r, n;
+    this.histogram = latency.getIntervalHistogram(histogram);
+    final long satisfied = histogram.getCountBetweenValues(0, goalLatency);
+    final long tolerating = histogram.getCountBetweenValues(goalLatency, goalLatency * 4);
+    final double r, n, apdex;
     if (c == 0) {
-      r = n = 0;
+      r = n = apdex = 0;
     } else {
       r = responseTimeCount.rate() / c * 1e-6;
       n = x * r;
+      apdex = (satisfied + (tolerating / 2.0)) / c;
     }
-    this.histogram = latency.getIntervalHistogram(histogram);
     return new AutoValue_Snapshot(c, x, n, r,
         histogram.getValueAtPercentile(50) * 1e-6,
         histogram.getValueAtPercentile(90) * 1e-6,
         histogram.getValueAtPercentile(99) * 1e-6,
-        histogram.getValueAtPercentile(99.9) * 1e-6);
+        histogram.getValueAtPercentile(99.9) * 1e-6,
+        apdex);
   }
 }

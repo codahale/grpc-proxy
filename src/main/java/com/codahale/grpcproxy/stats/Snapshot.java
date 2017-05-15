@@ -43,5 +43,8 @@ public abstract class Snapshot {
 
   @JsonProperty
   public abstract double p999();
+
+  @JsonProperty
+  public abstract double apdex();
 }
 
