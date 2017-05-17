@@ -52,9 +52,9 @@ public class Recorder {
   public Snapshot interval() {
     final IntervalCount requestCount = count.interval();
     final IntervalCount responseTimeCount = responseTime.interval();
+    final Histogram h = latency.getIntervalHistogram(histogram);
     final long c = requestCount.count();
     final double x = requestCount.rate();
-    final Histogram h = latency.getIntervalHistogram(histogram);
     final long satisfied = h.getCountBetweenValues(0, goalLatency);
     final long tolerating = h.getCountBetweenValues(goalLatency, goalLatency * 4);
     final double p50 = h.getValueAtPercentile(50) * 1e-6;
