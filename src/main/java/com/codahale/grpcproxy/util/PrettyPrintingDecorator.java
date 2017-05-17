@@ -21,7 +21,9 @@ public class PrettyPrintingDecorator implements JsonGeneratorDecorator {
 
   @Override
   public JsonGenerator decorate(JsonGenerator generator) {
+    if (Boolean.valueOf(System.getenv("DENSE_LOGS"))) {
+      return generator;
+    }
     return generator.useDefaultPrettyPrinter();
   }
-
 }
