@@ -54,9 +54,14 @@ public class Recorder {
     final IntervalCount responseTimeCount = responseTime.interval();
     final long c = requestCount.count();
     final double x = requestCount.rate();
-    this.histogram = latency.getIntervalHistogram(histogram);
-    final long satisfied = histogram.getCountBetweenValues(0, goalLatency);
-    final long tolerating = histogram.getCountBetweenValues(goalLatency, goalLatency * 4);
+    final Histogram h = latency.getIntervalHistogram(histogram);
+    final long satisfied = h.getCountBetweenValues(0, goalLatency);
+    final long tolerating = h.getCountBetweenValues(goalLatency, goalLatency * 4);
+    final double p50 = h.getValueAtPercentile(50) * 1e-6;
+    final double p90 = h.getValueAtPercentile(90) * 1e-6;
+    final double p99 = h.getValueAtPercentile(99) * 1e-6;
+    final double p999 = h.getValueAtPercentile(99.9) * 1e-6;
+    this.histogram = h;
     final double r, n, apdex;
     if (c == 0) {
       r = n = apdex = 0;
@@ -65,11 +70,6 @@ public class Recorder {
       n = x * r;
       apdex = Math.min(1.0, (satisfied + (tolerating / 2.0)) / c);
     }
-    return new AutoValue_Snapshot(c, x, n, r,
-        histogram.getValueAtPercentile(50) * 1e-6,
-        histogram.getValueAtPercentile(90) * 1e-6,
-        histogram.getValueAtPercentile(99) * 1e-6,
-        histogram.getValueAtPercentile(99.9) * 1e-6,
-        apdex);
+    return new AutoValue_Snapshot(c, x, n, r, p50, p90, p99, p999, apdex);
   }
 }
