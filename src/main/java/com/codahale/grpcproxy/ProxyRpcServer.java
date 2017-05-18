@@ -14,6 +14,8 @@
 
 package com.codahale.grpcproxy;
 
+import io.airlift.airline.Command;
+import io.airlift.airline.Option;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.EventLoopGroup;
@@ -23,20 +25,17 @@ import javax.net.ssl.SSLException;
 import okhttp3.HttpUrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * A gRPC server which proxies requests to an HTTP/1.1 backend server.
  */
-public class ProxyRpcServer {
+class ProxyRpcServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRpcServer.class);
-
   private final EventLoopGroup bossEventLoopGroup;
   private final EventLoopGroup workerEventLoopGroup;
   private final Server server;
   private final StatsTracerFactory stats;
-
   private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
@@ -49,15 +48,6 @@ public class ProxyRpcServer {
                                     .sslContext(TLS.serverContext())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                     .build();
-  }
-
-  public static void main(String[] args) throws IOException, InterruptedException {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
-    final ProxyRpcServer server = new ProxyRpcServer(50051,
-        HttpUrl.parse("http://localhost:8080/grpc"));
-    server.start();
-    server.blockUntilShutdown();
   }
 
   private void start() throws IOException {
@@ -83,5 +73,25 @@ public class ProxyRpcServer {
 
   private void blockUntilShutdown() throws InterruptedException {
     server.awaitTermination();
+  }
+
+  @Command(name = "server-proxy", description = "Run a gRPC proxy server.")
+  public static class Cmd implements Runnable {
+
+    @Option(name = {"-p", "--port"}, description = "the port to listen on")
+    private int port = 50051;
+    @Option(name = {"-u", "--upstream"}, description = "the URL of the upstream HTTP server")
+    private String upstream = "http://localhost:8080/grpc";
+
+    @Override
+    public void run() {
+      try {
+        final ProxyRpcServer server = new ProxyRpcServer(port, HttpUrl.parse(upstream));
+        server.start();
+        server.blockUntilShutdown();
+      } catch (Exception e) {
+        LOGGER.error("Error running command", e);
+      }
+    }
   }
 }

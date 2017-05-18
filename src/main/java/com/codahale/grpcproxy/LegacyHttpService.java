@@ -16,6 +16,8 @@ package com.codahale.grpcproxy;
 
 import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
+import io.airlift.airline.Command;
+import io.airlift.airline.Option;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import javax.servlet.ServletException;
@@ -27,28 +29,16 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
  * in response bodies. Implements, in its own way, the {@code helloworld.Greeter} service.
  */
-public class LegacyHttpService extends AbstractHandler {
+class LegacyHttpService extends AbstractHandler {
 
-  public static void main(String[] args) throws Exception {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
-
-    final ThreadPool threadPool = new ExecutorThreadPool(Executors.newCachedThreadPool());
-    final Server server = new Server(threadPool);
-    server.setHandler(new LegacyHttpService());
-
-    final ServerConnector connector = new ServerConnector(server);
-    connector.setPort(8080);
-    server.addConnector(connector);
-
-    server.start();
-  }
+  private static final Logger LOGGER = LoggerFactory.getLogger(LegacyHttpService.class);
 
   @Override
   public void handle(String target, Request baseRequest, HttpServletRequest request,
@@ -66,5 +56,29 @@ public class LegacyHttpService extends AbstractHandler {
     final String greeting = "Hello " + req.getName();
     final HelloReply resp = HelloReply.newBuilder().setMessage(greeting).build();
     resp.writeTo(response.getOutputStream());
+  }
+
+  @Command(name = "server-http", description = "Run a legacy HTTP/Protobuf HelloWorld service.")
+  public static class Cmd implements Runnable {
+
+    @Option(name = {"-p", "--port"}, description = "the port to listen on")
+    private int port = 8080;
+
+    @Override
+    public void run() {
+      try {
+        final ThreadPool threadPool = new ExecutorThreadPool(Executors.newCachedThreadPool());
+        final Server server = new Server(threadPool);
+        server.setHandler(new LegacyHttpService());
+
+        final ServerConnector connector = new ServerConnector(server);
+        connector.setPort(port);
+        server.addConnector(connector);
+
+        server.start();
+      } catch (Exception e) {
+        LOGGER.error("Error running command", e);
+      }
+    }
   }
 }

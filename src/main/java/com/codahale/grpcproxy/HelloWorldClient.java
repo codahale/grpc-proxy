@@ -19,13 +19,14 @@ import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import com.codahale.grpcproxy.stats.Recorder;
 import com.codahale.grpcproxy.stats.Snapshot;
+import io.airlift.airline.Command;
+import io.airlift.airline.Option;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.channel.EventLoopGroup;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,19 +34,16 @@ import javax.net.ssl.SSLException;
 import net.logstash.logback.marker.Markers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * A gRPC client. This could be in any language.
  */
-public class HelloWorldClient {
+class HelloWorldClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldClient.class);
-
   private final EventLoopGroup eventLoopGroup;
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
-
   private HelloWorldClient(String host, int port) throws SSLException {
     this.eventLoopGroup = Netty.newWorkerEventLoopGroup();
     this.channel = NettyChannelBuilder.forAddress(host, port)
@@ -54,45 +52,6 @@ public class HelloWorldClient {
                                       .sslContext(TLS.clientContext())
                                       .build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
-  }
-
-  public static void main(String[] args) throws Exception {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
-
-    /* Access a service running on the local machine on port 50051 */
-    final HelloWorldClient client = new HelloWorldClient("localhost", 50051);
-    try {
-      final Map<String, String> env = System.getenv();
-      final int requests = Integer.parseInt(env.getOrDefault("REQUESTS", "1000000"));
-      final int threads = Integer.parseInt(env.getOrDefault("THREADS", "20"));
-      final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
-          TimeUnit.MILLISECONDS.toMicros(10), TimeUnit.MICROSECONDS);
-      LOGGER.info("Initial request: {}", client.greet(requests));
-      LOGGER.info("Sending {} requests from {} threads", requests, threads);
-
-      final ExecutorService threadPool = Executors.newFixedThreadPool(threads);
-      final Instant start = Instant.now();
-      for (int i = 0; i < threads; i++) {
-        threadPool.submit(() -> {
-          for (int j = 0; j < requests / threads; j++) {
-            final long t = System.nanoTime();
-            client.greet(j);
-            recorder.record(t);
-          }
-        });
-      }
-      threadPool.shutdown();
-      threadPool.awaitTermination(20, TimeUnit.MINUTES);
-
-      final Snapshot stats = recorder.interval();
-      final Duration duration = Duration.between(start, Instant.now());
-      LOGGER.info(Markers.append("stats", stats)
-                         .and(Markers.append("duration", duration.toString())),
-          "{} requests in {} ({} req/sec)", stats.count(), duration, stats.throughput());
-    } finally {
-      client.shutdown();
-    }
   }
 
   private void shutdown() throws InterruptedException {
@@ -108,6 +67,58 @@ public class HelloWorldClient {
     } catch (StatusRuntimeException e) {
       LOGGER.warn("RPC failed: {}", e.getStatus());
       return null;
+    }
+  }
+
+  @Command(name = "client", description = "Runs a bunch of HelloWorld client calls.")
+  public static class Cmd implements Runnable {
+
+    @Option(name = {"-h", "--hostname"}, description = "the hostname of the gRPC server")
+    private String hostname = "localhost";
+    @Option(name = {"-p", "--port"}, description = "the port of the gRPC server")
+    private int port = 50051;
+    @Option(name = {"-n", "--requests"}, description = "the number of requests to make")
+    private int requests = 1_000_000;
+    @Option(name = {"-c", "--threads"}, description = "the number of threads to use")
+    private int threads = 10;
+
+    @Override
+    public void run() {
+
+      try {
+    /* Access a service running on the local machine on port 50051 */
+        final HelloWorldClient client = new HelloWorldClient(hostname, port);
+        try {
+          final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
+              TimeUnit.MILLISECONDS.toMicros(10), TimeUnit.MICROSECONDS);
+          LOGGER.info("Initial request: {}", client.greet(requests));
+          LOGGER.info("Sending {} requests from {} threads", requests, threads);
+
+          final ExecutorService threadPool = Executors.newFixedThreadPool(threads);
+          final Instant start = Instant.now();
+          for (int i = 0; i < threads; i++) {
+            threadPool.submit(() -> {
+              for (int j = 0; j < requests / threads; j++) {
+                final long t = System.nanoTime();
+                client.greet(j);
+                recorder.record(t);
+              }
+            });
+          }
+          threadPool.shutdown();
+          threadPool.awaitTermination(20, TimeUnit.MINUTES);
+
+          final Snapshot stats = recorder.interval();
+          final Duration duration = Duration.between(start, Instant.now());
+          LOGGER.info(Markers.append("stats", stats)
+                             .and(Markers.append("duration", duration.toString())),
+              "{} requests in {} ({} req/sec)", stats.count(), duration, stats.throughput());
+        } finally {
+          client.shutdown();
+        }
+      } catch (Exception e) {
+        LOGGER.error("Error running command", e);
+      }
     }
   }
 }

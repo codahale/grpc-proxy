@@ -95,6 +95,17 @@
       <artifactId>logstash-logback-encoder</artifactId>
       <version>4.9</version>
     </dependency>
+    <dependency>
+      <groupId>io.airlift</groupId>
+      <artifactId>airline</artifactId>
+      <version>0.7</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
   <build>
     <extensions>
@@ -131,6 +142,14 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.0.0</version>
+        <configuration>
+          <transformers>
+            <transformer
+              implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+              <mainClass>com.codahale.grpcproxy.Runner</mainClass>
+            </transformer>
+          </transformers>
+        </configuration>
         <executions>
           <execution>
             <phase>package</phase>

@@ -17,6 +17,8 @@ package com.codahale.grpcproxy;
 import com.codahale.grpcproxy.helloworld.GreeterGrpc.GreeterImplBase;
 import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
+import io.airlift.airline.Command;
+import io.airlift.airline.Option;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -26,17 +28,14 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
-public class HelloWorldServer {
+class HelloWorldServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRpcServer.class);
-
   private final EventLoopGroup bossEventLoopGroup;
   private final EventLoopGroup workerEventLoopGroup;
   private final Server server;
   private final StatsTracerFactory stats;
-
   private HelloWorldServer(int port) throws SSLException {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
@@ -59,14 +58,6 @@ public class HelloWorldServer {
                                       }
                                     })
                                     .build();
-  }
-
-  public static void main(String[] args) throws IOException, InterruptedException {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
-    final HelloWorldServer server = new HelloWorldServer(50051);
-    server.start();
-    server.blockUntilShutdown();
   }
 
   private void start() throws IOException {
@@ -92,5 +83,23 @@ public class HelloWorldServer {
 
   private void blockUntilShutdown() throws InterruptedException {
     server.awaitTermination();
+  }
+
+  @Command(name = "server-grpc", description = "Run a gRPC HelloWorld service.")
+  public static class Cmd implements Runnable {
+
+    @Option(name = {"-p", "--port"}, description = "the port to listen on")
+    private int port = 50051;
+
+    @Override
+    public void run() {
+      try {
+        final HelloWorldServer server = new HelloWorldServer(port);
+        server.start();
+        server.blockUntilShutdown();
+      } catch (Exception e) {
+        LOGGER.error("Error running command", e);
+      }
+    }
   }
 }
