@@ -86,7 +86,7 @@ class HelloWorldServer {
     server.awaitTermination();
   }
 
-  @Command(name = "server-grpc", description = "Run a gRPC HelloWorld service.")
+  @Command(name = "grpc", description = "Run a gRPC HelloWorld service.")
   public static class Cmd implements Runnable {
 
     @Option(name = {"-p", "--port"}, description = "the port to listen on")

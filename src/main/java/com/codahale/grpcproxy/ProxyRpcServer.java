@@ -76,7 +76,7 @@ class ProxyRpcServer {
     server.awaitTermination();
   }
 
-  @Command(name = "server-proxy", description = "Run a gRPC proxy server.")
+  @Command(name = "proxy", description = "Run a gRPC proxy server.")
   public static class Cmd implements Runnable {
 
     @Option(name = {"-p", "--port"}, description = "the port to listen on")

@@ -58,7 +58,7 @@ class LegacyHttpServer extends AbstractHandler {
     resp.writeTo(response.getOutputStream());
   }
 
-  @Command(name = "server-http", description = "Run a legacy HTTP/Protobuf HelloWorld service.")
+  @Command(name = "http", description = "Run a legacy HTTP/Protobuf HelloWorld service.")
   public static class Cmd implements Runnable {
 
     @Option(name = {"-p", "--port"}, description = "the port to listen on")

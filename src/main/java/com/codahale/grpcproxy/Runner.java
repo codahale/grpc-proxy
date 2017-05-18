@@ -14,23 +14,34 @@
 
 package com.codahale.grpcproxy;
 
+import com.codahale.grpcproxy.HelloWorldClient.Cmd;
 import io.airlift.airline.Cli;
+import io.airlift.airline.Cli.CliBuilder;
 import io.airlift.airline.Help;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 public class Runner {
 
-  @SuppressWarnings("unchecked")
   public static void main(String[] args) {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
 
-    Cli.<Runnable>builder("grpc-proxy")
+    final CliBuilder<Runnable> builder = Cli.<Runnable>builder("grpc-proxy")
+        .withDescription("A set of example services for testing a gRPC proxy service.")
         .withDefaultCommand(Help.class)
-        .withCommands(Help.class, ProxyRpcServer.Cmd.class, LegacyHttpServer.Cmd.class,
-            HelloWorldClient.Cmd.class, HelloWorldServer.Cmd.class)
-        .build()
-        .parse(args)
-        .run();
+        .withCommand(Help.class)
+        .withCommand(Cmd.class);
+
+    builder
+        .withGroup("server")
+        .withDescription("Run a server")
+        .withDefaultCommand(Help.class)
+        .withCommand(Help.class)
+        .withCommand(ProxyRpcServer.Cmd.class)
+        .withCommand(LegacyHttpServer.Cmd.class)
+        .withCommand(HelloWorldServer.Cmd.class);
+
+    final Cli<Runnable> cli = builder.build();
+    cli.parse(args).run();
   }
 }
