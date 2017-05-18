@@ -23,6 +23,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /**
  * Proxies a gRPC request to an HTTP backend.
@@ -45,7 +46,10 @@ class ProxyUnaryMethod implements UnaryMethod<byte[], byte[]> {
                                              .build();
     try {
       try (Response response = client.newCall(req).execute()) {
-        responseObserver.onNext(response.body().bytes());
+        final ResponseBody body = response.body();
+        if (body != null) {
+          responseObserver.onNext(body.bytes());
+        }
       }
       responseObserver.onCompleted();
     } catch (IOException e) {
