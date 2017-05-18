@@ -36,6 +36,7 @@ class HelloWorldServer {
   private final EventLoopGroup workerEventLoopGroup;
   private final Server server;
   private final StatsTracerFactory stats;
+
   private HelloWorldServer(int port) throws SSLException {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
