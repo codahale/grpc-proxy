@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.grpcproxy;
+package com.codahale.grpcproxy.util;
 
 import com.google.common.io.ByteStreams;
 import io.grpc.MethodDescriptor.Marshaller;
@@ -23,7 +23,7 @@ import java.io.InputStream;
 /**
  * A dumb marshaller which refuses to marshal.
  */
-class ByteArrayMarshaller implements Marshaller<byte[]> {
+public class ByteArrayMarshaller implements Marshaller<byte[]> {
 
   @Override
   public InputStream stream(byte[] value) {

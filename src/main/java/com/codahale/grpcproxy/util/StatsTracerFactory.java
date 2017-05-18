@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.grpcproxy;
+package com.codahale.grpcproxy.util;
 
 import com.codahale.grpcproxy.stats.IntervalAdder;
 import com.codahale.grpcproxy.stats.Recorder;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * A stream tracer factory which measures throughput, concurrency, response time, and latency
  * distribution.
  */
-class StatsTracerFactory extends ServerStreamTracer.Factory {
+public class StatsTracerFactory extends ServerStreamTracer.Factory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StatsTracerFactory.class);
   private static final long MIN_DURATION = TimeUnit.MICROSECONDS.toMicros(500);
@@ -76,12 +76,12 @@ class StatsTracerFactory extends ServerStreamTracer.Factory {
     };
   }
 
-  void start() {
+  public void start() {
     executor = Executors.newSingleThreadScheduledExecutor();
     executor.scheduleAtFixedRate(this::report, 1, 1, TimeUnit.SECONDS);
   }
 
-  void stop() {
+  public void stop() {
     executor.shutdown();
   }
 

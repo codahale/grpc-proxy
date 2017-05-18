@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.grpcproxy;
+package com.codahale.grpcproxy.util;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -27,7 +27,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class Netty {
+public class Netty {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Netty.class);
   private static final int WORKER_THREADS = Runtime.getRuntime().availableProcessors() * 2;
@@ -40,28 +40,28 @@ class Netty {
     }
   }
 
-  static EventLoopGroup newBossEventLoopGroup() {
+  public static EventLoopGroup newBossEventLoopGroup() {
     if (Epoll.isAvailable()) {
       return new EpollEventLoopGroup();
     }
     return new NioEventLoopGroup();
   }
 
-  static EventLoopGroup newWorkerEventLoopGroup() {
+  public static EventLoopGroup newWorkerEventLoopGroup() {
     if (Epoll.isAvailable()) {
       return new EpollEventLoopGroup(WORKER_THREADS);
     }
     return new NioEventLoopGroup(WORKER_THREADS);
   }
 
-  static Class<? extends ServerChannel> serverChannelType() {
+  public static Class<? extends ServerChannel> serverChannelType() {
     if (Epoll.isAvailable()) {
       return EpollServerSocketChannel.class;
     }
     return NioServerSocketChannel.class;
   }
 
-  static Class<? extends Channel> clientChannelType() {
+  public static Class<? extends Channel> clientChannelType() {
     if (Epoll.isAvailable()) {
       return EpollSocketChannel.class;
     }

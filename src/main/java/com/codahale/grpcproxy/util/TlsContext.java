@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.codahale.grpcproxy;
+package com.codahale.grpcproxy.util;
 
 import io.grpc.netty.GrpcSslContexts;
 import io.netty.handler.ssl.ClientAuth;
@@ -22,11 +22,11 @@ import io.netty.handler.ssl.SslProvider;
 import java.io.File;
 import javax.net.ssl.SSLException;
 
-class TlsContext {
+public class TlsContext {
 
   private final File trustedCerts, cert, key;
 
-  TlsContext(String trustedCertsPath, String certPath, String keyPath) {
+  public TlsContext(String trustedCertsPath, String certPath, String keyPath) {
     this.trustedCerts = new File(trustedCertsPath);
     if (!trustedCerts.exists()) {
       throw new IllegalArgumentException("Can't find " + trustedCertsPath);
@@ -43,14 +43,14 @@ class TlsContext {
     }
   }
 
-  SslContext toClientContext() throws SSLException {
+  public SslContext toClientContext() throws SSLException {
     return GrpcSslContexts.configure(SslContextBuilder.forClient(), SslProvider.OPENSSL)
                           .trustManager(trustedCerts)
                           .keyManager(cert, key)
                           .build();
   }
 
-  SslContext toServerContext() throws SSLException {
+  public SslContext toServerContext() throws SSLException {
     return GrpcSslContexts.configure(SslContextBuilder.forServer(cert, key), SslProvider.OPENSSL)
                           .trustManager(trustedCerts)
                           .clientAuth(ClientAuth.REQUIRE)

@@ -18,6 +18,8 @@ import com.codahale.grpcproxy.helloworld.GreeterGrpc;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import com.codahale.grpcproxy.stats.Recorder;
 import com.codahale.grpcproxy.stats.Snapshot;
+import com.codahale.grpcproxy.util.Netty;
+import com.codahale.grpcproxy.util.TlsContext;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import io.grpc.ManagedChannel;

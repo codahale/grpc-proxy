@@ -14,6 +14,9 @@
 
 package com.codahale.grpcproxy;
 
+import com.codahale.grpcproxy.util.Netty;
+import com.codahale.grpcproxy.util.StatsTracerFactory;
+import com.codahale.grpcproxy.util.TlsContext;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import io.grpc.Server;
