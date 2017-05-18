@@ -44,12 +44,12 @@ class HelloWorldClient {
   private final ManagedChannel channel;
   private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
-  private HelloWorldClient(String host, int port) throws SSLException {
+  private HelloWorldClient(String host, int port, TlsContext tls) throws SSLException {
     this.eventLoopGroup = Netty.newWorkerEventLoopGroup();
     this.channel = NettyChannelBuilder.forAddress(host, port)
                                       .eventLoopGroup(eventLoopGroup)
                                       .channelType(Netty.clientChannelType())
-                                      .sslContext(TLS.clientContext())
+                                      .sslContext(tls.toClientContext())
                                       .build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
   }
@@ -80,13 +80,18 @@ class HelloWorldClient {
     private int requests = 1_000_000;
     @Option(name = {"-c", "--threads"}, description = "the number of threads to use")
     private int threads = 10;
+    @Option(name = "--ca-certs")
+    private String trustedCertsPath = "cert.crt";
+    @Option(name = "--cert")
+    private String certPath = "cert.crt";
+    @Option(name = "--key")
+    private String keyPath = "cert.key";
 
     @Override
     public void run() {
-
       try {
-    /* Access a service running on the local machine on port 50051 */
-        final HelloWorldClient client = new HelloWorldClient(hostname, port);
+        final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
+        final HelloWorldClient client = new HelloWorldClient(hostname, port, tls);
         try {
           final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
               TimeUnit.MILLISECONDS.toMicros(10), TimeUnit.MICROSECONDS);

@@ -37,7 +37,7 @@ class HelloWorldServer {
   private final Server server;
   private final StatsTracerFactory stats;
 
-  private HelloWorldServer(int port) throws SSLException {
+  private HelloWorldServer(int port, TlsContext tls) throws SSLException {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
     this.workerEventLoopGroup = Netty.newWorkerEventLoopGroup();
@@ -46,7 +46,7 @@ class HelloWorldServer {
                                     .workerEventLoopGroup(workerEventLoopGroup)
                                     .channelType(Netty.serverChannelType())
                                     .addStreamTracerFactory(stats)
-                                    .sslContext(TLS.serverContext())
+                                    .sslContext(tls.toServerContext())
                                     .addService(new GreeterImplBase() {
                                       @Override
                                       public void sayHello(HelloRequest request,
@@ -91,11 +91,18 @@ class HelloWorldServer {
 
     @Option(name = {"-p", "--port"}, description = "the port to listen on")
     private int port = 50051;
+    @Option(name = "--ca-certs")
+    private String trustedCertsPath = "cert.crt";
+    @Option(name = "--cert")
+    private String certPath = "cert.crt";
+    @Option(name = "--key")
+    private String keyPath = "cert.key";
 
     @Override
     public void run() {
       try {
-        final HelloWorldServer server = new HelloWorldServer(port);
+        final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
+        final HelloWorldServer server = new HelloWorldServer(port, tls);
         server.start();
         server.blockUntilShutdown();
       } catch (Exception e) {

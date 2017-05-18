@@ -37,7 +37,7 @@ class ProxyRpcServer {
   private final Server server;
   private final StatsTracerFactory stats;
 
-  private ProxyRpcServer(int port, HttpUrl backend) throws SSLException {
+  private ProxyRpcServer(int port, TlsContext tls, HttpUrl backend) throws SSLException {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
     this.workerEventLoopGroup = Netty.newWorkerEventLoopGroup();
@@ -46,7 +46,7 @@ class ProxyRpcServer {
                                     .workerEventLoopGroup(workerEventLoopGroup)
                                     .channelType(Netty.serverChannelType())
                                     .addStreamTracerFactory(stats)
-                                    .sslContext(TLS.serverContext())
+                                    .sslContext(tls.toServerContext())
                                     .fallbackHandlerRegistry(new ProxyHandlerRegistry(backend))
                                     .build();
   }
@@ -83,11 +83,18 @@ class ProxyRpcServer {
     private int port = 50051;
     @Option(name = {"-u", "--upstream"}, description = "the URL of the upstream HTTP server")
     private String upstream = "http://localhost:8080/grpc";
+    @Option(name = "--ca-certs")
+    private String trustedCertsPath = "cert.crt";
+    @Option(name = "--cert")
+    private String certPath = "cert.crt";
+    @Option(name = "--key")
+    private String keyPath = "cert.key";
 
     @Override
     public void run() {
       try {
-        final ProxyRpcServer server = new ProxyRpcServer(port, HttpUrl.parse(upstream));
+        final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
+        final ProxyRpcServer server = new ProxyRpcServer(port, tls, HttpUrl.parse(upstream));
         server.start();
         server.blockUntilShutdown();
       } catch (Exception e) {
