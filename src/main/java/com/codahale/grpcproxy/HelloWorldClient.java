@@ -15,7 +15,6 @@
 package com.codahale.grpcproxy;
 
 import com.codahale.grpcproxy.helloworld.GreeterGrpc;
-import com.codahale.grpcproxy.helloworld.HelloReply;
 import com.codahale.grpcproxy.helloworld.HelloRequest;
 import com.codahale.grpcproxy.stats.Recorder;
 import com.codahale.grpcproxy.stats.Snapshot;
@@ -61,10 +60,9 @@ class HelloWorldClient {
   }
 
   private String greet(int i) {
-    final HelloRequest request = HelloRequest.newBuilder().setName("world " + i).build();
     try {
-      final HelloReply response = blockingStub.sayHello(request);
-      return response.getMessage();
+      final HelloRequest request = HelloRequest.newBuilder().setName("world " + i).build();
+      return blockingStub.sayHello(request).getMessage();
     } catch (StatusRuntimeException e) {
       LOGGER.warn("RPC failed: {}", e.getStatus());
       return null;
