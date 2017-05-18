@@ -27,7 +27,7 @@ public class Runner {
 
     Cli.<Runnable>builder("grpc-proxy")
         .withDefaultCommand(Help.class)
-        .withCommands(Help.class, ProxyRpcServer.Cmd.class, LegacyHttpService.Cmd.class,
+        .withCommands(Help.class, ProxyRpcServer.Cmd.class, LegacyHttpServer.Cmd.class,
             HelloWorldClient.Cmd.class, HelloWorldServer.Cmd.class)
         .build()
         .parse(args)
