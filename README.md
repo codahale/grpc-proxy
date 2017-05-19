@@ -30,7 +30,7 @@ This project has three moving parts:
 
 * gRPC 1.3.0
 * OkHttp
-* mutual TLS via BoringSSL
+* mutual TLS via OpenSSL (on macOS, run `brew install openssl apr`)
 
 ## Should I use this?
 

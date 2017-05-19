@@ -53,7 +53,7 @@
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <artifactId>netty-tcnative</artifactId>
       <!-- this can't be 2.x -->
       <version>1.1.33.Fork26</version>
       <classifier>${os.detected.classifier}</classifier>
