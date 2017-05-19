@@ -67,9 +67,9 @@ public class StatsTracerFactory extends ServerStreamTracer.Factory {
       @Override
       public void streamClosed(Status status) {
         final double duration = (System.nanoTime() - start) * 1e-9;
-        LOGGER.info(Markers.append("grpc_method_name", fullMethodName)
-                           .and(Markers.append("status", status))
-                           .and(Markers.append("duration", duration)), "request handled");
+        LOGGER.debug(Markers.append("grpc_method_name", fullMethodName)
+                            .and(Markers.append("status", status))
+                            .and(Markers.append("duration", duration)), "request handled");
         all.record(start);
         endpoint.record(start);
       }
