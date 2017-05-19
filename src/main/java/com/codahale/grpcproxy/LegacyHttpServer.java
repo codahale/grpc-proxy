@@ -19,7 +19,6 @@ import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import java.io.IOException;
-import java.util.concurrent.Executors;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,8 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,12 +61,13 @@ class LegacyHttpServer extends AbstractHandler {
 
     @Option(name = {"-p", "--port"}, description = "the port to listen on")
     private int port = 8080;
+    @Option(name = {"-c", "--threads"}, description = "the number of worker threads to use")
+    private int threads = 100;
 
     @Override
     public void run() {
       try {
-        final ThreadPool threadPool = new ExecutorThreadPool(Executors.newCachedThreadPool());
-        final Server server = new Server(threadPool);
+        final Server server = new Server(new QueuedThreadPool(threads));
         server.setHandler(new LegacyHttpServer());
 
         final ServerConnector connector = new ServerConnector(server);
