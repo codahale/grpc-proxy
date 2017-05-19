@@ -58,12 +58,7 @@ class ProxyRpcServer {
     stats.start();
     server.start();
     LOGGER.info("Server started, listening on " + server.getPort());
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-      System.err.println("*** shutting down gRPC server since JVM is shutting down");
-      ProxyRpcServer.this.stop();
-      System.err.println("*** server shut down");
-    }));
+    Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
   }
 
   private void stop() {

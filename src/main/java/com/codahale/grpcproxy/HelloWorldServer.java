@@ -14,9 +14,6 @@
 
 package com.codahale.grpcproxy;
 
-import com.codahale.grpcproxy.helloworld.GreeterGrpc.GreeterImplBase;
-import com.codahale.grpcproxy.helloworld.HelloReply;
-import com.codahale.grpcproxy.helloworld.HelloRequest;
 import com.codahale.grpcproxy.util.Netty;
 import com.codahale.grpcproxy.util.StatsTracerFactory;
 import com.codahale.grpcproxy.util.TlsContext;
@@ -24,7 +21,6 @@ import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
-import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -50,30 +46,16 @@ class HelloWorldServer {
                                     .channelType(Netty.serverChannelType())
                                     .addStreamTracerFactory(stats)
                                     .sslContext(tls.toServerContext())
-                                    .addService(new GreeterImplBase() {
-                                      @Override
-                                      public void sayHello(HelloRequest request,
-                                          StreamObserver<HelloReply> responseObserver) {
-                                        final String message = "Hello " + request.getName();
-                                        responseObserver.onNext(HelloReply.newBuilder()
-                                                                          .setMessage(message)
-                                                                          .build());
-                                        responseObserver.onCompleted();
-                                      }
-                                    })
+                                    .addService(new GreeterService())
                                     .build();
   }
 
-  private void start() throws IOException {
+  private void start() throws IOException, InterruptedException {
     stats.start();
     server.start();
     LOGGER.info("Server started, listening on {}", server.getPort());
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-      System.err.println("*** shutting down gRPC server since JVM is shutting down");
-      HelloWorldServer.this.stop();
-      System.err.println("*** server shut down");
-    }));
+    Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+    server.awaitTermination();
   }
 
   private void stop() {
@@ -83,10 +65,6 @@ class HelloWorldServer {
     }
     bossEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
     workerEventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
-  }
-
-  private void blockUntilShutdown() throws InterruptedException {
-    server.awaitTermination();
   }
 
   @Command(name = "grpc", description = "Run a gRPC HelloWorld service.")
@@ -107,10 +85,10 @@ class HelloWorldServer {
         final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
         final HelloWorldServer server = new HelloWorldServer(port, tls);
         server.start();
-        server.blockUntilShutdown();
       } catch (Exception e) {
         LOGGER.error("Error running command", e);
       }
     }
   }
+
 }

@@ -34,17 +34,42 @@ import org.slf4j.LoggerFactory;
  * An HTTP/1.1 server which parses protobuf messages in request bodies and emits protobuf messages
  * in response bodies. Implements, in its own way, the {@code helloworld.Greeter} service.
  */
-class LegacyHttpServer extends AbstractHandler {
+class LegacyHttpServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LegacyHttpServer.class);
+  private final Server server;
 
-  @Override
-  public void handle(String target, Request baseRequest, HttpServletRequest request,
-      HttpServletResponse response) throws IOException, ServletException {
-    final String method = baseRequest.getParameter("method");
-    if ("helloworld.Greeter/SayHello".equals(method)) {
-      baseRequest.setHandled(true);
-      sayHello(baseRequest, response);
+  LegacyHttpServer(int port, int threads) {
+    this.server = new Server(new QueuedThreadPool(threads));
+    server.setHandler(new AbstractHandler() {
+      @Override
+      public void handle(String target, Request baseRequest,
+          HttpServletRequest request, HttpServletResponse response)
+          throws IOException, ServletException {
+        final String method = baseRequest.getParameter("method");
+        if ("helloworld.Greeter/SayHello".equals(method)) {
+          baseRequest.setHandled(true);
+          sayHello(baseRequest, response);
+        }
+      }
+    });
+
+    final ServerConnector connector = new ServerConnector(server);
+    connector.setPort(port);
+    server.addConnector(connector);
+
+  }
+
+  private void start() throws Exception {
+    Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+    server.start();
+  }
+
+  private void stop() {
+    try {
+      server.stop();
+    } catch (Exception e) {
+      LOGGER.error("Error shutting down server", e);
     }
   }
 
@@ -66,17 +91,11 @@ class LegacyHttpServer extends AbstractHandler {
 
     @Override
     public void run() {
+      final LegacyHttpServer server = new LegacyHttpServer(port, threads);
       try {
-        final Server server = new Server(new QueuedThreadPool(threads));
-        server.setHandler(new LegacyHttpServer());
-
-        final ServerConnector connector = new ServerConnector(server);
-        connector.setPort(port);
-        server.addConnector(connector);
-
         server.start();
       } catch (Exception e) {
-        LOGGER.error("Error running command", e);
+        LOGGER.error("Error starting server", e);
       }
     }
   }
