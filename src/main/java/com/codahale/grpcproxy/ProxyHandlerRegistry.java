@@ -38,6 +38,7 @@ import okhttp3.ResponseBody;
  */
 class ProxyHandlerRegistry extends HandlerRegistry {
 
+  private static final MediaType OCTET_STREAM = MediaType.parse("application/octet-stream");
   private final HttpUrl backend;
   private final OkHttpClient client;
 
@@ -57,33 +58,29 @@ class ProxyHandlerRegistry extends HandlerRegistry {
             .setType(MethodType.UNARY)
             .setFullMethodName(methodName)
             .build(),
-        ServerCalls.asyncUnaryCall(new ProxyUnaryMethod(client, backend, methodName)));
+        ServerCalls.asyncUnaryCall(new ProxyUnaryMethod(backend, methodName)));
   }
 
   /**
    * Proxies a gRPC request to an HTTP backend.
    */
-  private static class ProxyUnaryMethod implements ServerCalls.UnaryMethod<byte[], byte[]> {
+  private class ProxyUnaryMethod implements ServerCalls.UnaryMethod<byte[], byte[]> {
 
-    private static final MediaType OCTET_STREAM = MediaType.parse("application/octet-stream");
-    private final OkHttpClient client;
     private final HttpUrl url;
 
-    ProxyUnaryMethod(OkHttpClient client, HttpUrl backend, String methodName) {
-      this.client = client;
+    ProxyUnaryMethod(HttpUrl backend, String methodName) {
       this.url = backend.newBuilder().addQueryParameter("method", methodName).build();
     }
 
     @Override
     public void invoke(byte[] msg, StreamObserver<byte[]> responseObserver) {
-      final Request req = new Request.Builder().url(url)
-                                               .post(RequestBody.create(OCTET_STREAM, msg))
-                                               .build();
+      final RequestBody reqBody = RequestBody.create(OCTET_STREAM, msg);
+      final Request req = new Request.Builder().url(url).post(reqBody).build();
       try {
-        try (Response response = client.newCall(req).execute()) {
-          final ResponseBody body = response.body();
-          if (body != null) {
-            responseObserver.onNext(body.bytes());
+        try (Response resp = client.newCall(req).execute()) {
+          final ResponseBody respBody = resp.body();
+          if (respBody != null) {
+            responseObserver.onNext(respBody.bytes());
           }
         }
         responseObserver.onCompleted();
