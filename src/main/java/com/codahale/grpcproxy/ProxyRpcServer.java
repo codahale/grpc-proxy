@@ -95,7 +95,7 @@ class ProxyRpcServer {
         final ProxyRpcServer server = new ProxyRpcServer(port, tls, HttpUrl.parse(upstream));
         server.start();
         server.blockUntilShutdown();
-      } catch (Exception e) {
+      } catch (IOException | InterruptedException e) {
         LOGGER.error("Error running command", e);
       }
     }

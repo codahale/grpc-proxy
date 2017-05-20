@@ -103,7 +103,7 @@ class HelloWorldClient {
           final ExecutorService threadPool = Executors.newFixedThreadPool(threads);
           final Instant start = Instant.now();
           for (int i = 0; i < threads; i++) {
-            threadPool.submit(() -> {
+            threadPool.execute(() -> {
               for (int j = 0; j < requests / threads; j++) {
                 final long t = System.nanoTime();
                 client.greet(j);
@@ -122,7 +122,7 @@ class HelloWorldClient {
         } finally {
           client.shutdown();
         }
-      } catch (Exception e) {
+      } catch (SSLException | InterruptedException e) {
         LOGGER.error("Error running command", e);
       }
     }

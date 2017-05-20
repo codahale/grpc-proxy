@@ -85,7 +85,7 @@ class HelloWorldServer {
         final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
         final HelloWorldServer server = new HelloWorldServer(port, tls);
         server.start();
-      } catch (Exception e) {
+      } catch (IOException | InterruptedException e) {
         LOGGER.error("Error running command", e);
       }
     }
