@@ -127,7 +127,7 @@
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>4.9</version>
+      <version>4.10</version>
     </dependency>
     <dependency>
       <groupId>io.airlift</groupId>
