@@ -26,10 +26,10 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <grpc.version>1.6.1</grpc.version>
-    <jetty.version>9.4.6.v20170531</jetty.version>
+    <grpc.version>1.7.0</grpc.version>
+    <jetty.version>9.4.7.v20170914</jetty.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <netty.version>4.1.14.Final</netty.version>
+    <netty.version>4.1.16.Final</netty.version>
     <jackson.version>2.9.1</jackson.version>
   </properties>
 
@@ -157,12 +157,12 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>23.0</version>
+      <version>23.2-jre</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <version>3.1.0</version>
+      <version>4.0.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
