@@ -67,9 +67,11 @@ public class StatsTracerFactory extends ServerStreamTracer.Factory {
       @Override
       public void streamClosed(Status status) {
         final double duration = (System.nanoTime() - start) * 1e-9;
-        LOGGER.debug(Markers.append("grpc_method_name", fullMethodName)
-                            .and(Markers.append("status", status))
-                            .and(Markers.append("duration", duration)), "request handled");
+        LOGGER.debug(
+            Markers.append("grpc_method_name", fullMethodName)
+                .and(Markers.append("status", status))
+                .and(Markers.append("duration", duration)),
+            "request handled");
         all.record(start);
         endpoint.record(start);
       }
@@ -88,13 +90,14 @@ public class StatsTracerFactory extends ServerStreamTracer.Factory {
   /**
    * Calculate and report the three parameters of Little's Law and some latency percentiles.
    *
-   * This just writes them to stdout, but presumably we'd be reporting them to a centralized
+   * <p>This just writes them to stdout, but presumably we'd be reporting them to a centralized
    * service.
    */
   private void report() {
-    LogstashMarker marker = Markers.append("all", all.interval())
-                                   .and(Markers.append("bytes_in", bytesIn.interval()))
-                                   .and(Markers.append("bytes_out", bytesOut.interval()));
+    LogstashMarker marker =
+        Markers.append("all", all.interval())
+            .and(Markers.append("bytes_in", bytesIn.interval()))
+            .and(Markers.append("bytes_out", bytesOut.interval()));
     for (Entry<String, Recorder> entry : endpoints.entrySet()) {
       marker = marker.and(Markers.append(entry.getKey(), entry.getValue().interval()));
     }

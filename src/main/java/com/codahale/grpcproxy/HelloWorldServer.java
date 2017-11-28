@@ -40,14 +40,15 @@ class HelloWorldServer {
     this.stats = new StatsTracerFactory();
     this.bossEventLoopGroup = Netty.newBossEventLoopGroup();
     this.workerEventLoopGroup = Netty.newWorkerEventLoopGroup();
-    this.server = NettyServerBuilder.forPort(port)
-                                    .bossEventLoopGroup(bossEventLoopGroup)
-                                    .workerEventLoopGroup(workerEventLoopGroup)
-                                    .channelType(Netty.serverChannelType())
-                                    .addStreamTracerFactory(stats)
-                                    .sslContext(tls.toServerContext())
-                                    .addService(new GreeterService())
-                                    .build();
+    this.server =
+        NettyServerBuilder.forPort(port)
+            .bossEventLoopGroup(bossEventLoopGroup)
+            .workerEventLoopGroup(workerEventLoopGroup)
+            .channelType(Netty.serverChannelType())
+            .addStreamTracerFactory(stats)
+            .sslContext(tls.toServerContext())
+            .addService(new GreeterService())
+            .build();
   }
 
   private void start() throws IOException, InterruptedException {
@@ -70,12 +71,18 @@ class HelloWorldServer {
   @Command(name = "grpc", description = "Run a gRPC HelloWorld service.")
   public static class Cmd implements Runnable {
 
-    @Option(name = {"-p", "--port"}, description = "the port to listen on")
+    @Option(
+      name = {"-p", "--port"},
+      description = "the port to listen on"
+    )
     private int port = 50051;
+
     @Option(name = "--ca-certs")
     private String trustedCertsPath = "cert.crt";
+
     @Option(name = "--cert")
     private String certPath = "cert.crt";
+
     @Option(name = "--key")
     private String keyPath = "cert.key";
 
@@ -90,5 +97,4 @@ class HelloWorldServer {
       }
     }
   }
-
 }

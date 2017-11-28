@@ -41,23 +41,26 @@ class LegacyHttpServer {
 
   LegacyHttpServer(int port, int threads) {
     this.server = new Server(new QueuedThreadPool(threads));
-    server.setHandler(new AbstractHandler() {
-      @Override
-      public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException, ServletException {
-        final String method = baseRequest.getParameter("method");
-        if ("helloworld.Greeter/SayHello".equals(method)) {
-          baseRequest.setHandled(true);
-          sayHello(baseRequest, response);
-        }
-      }
-    });
+    server.setHandler(
+        new AbstractHandler() {
+          @Override
+          public void handle(
+              String target,
+              Request baseRequest,
+              HttpServletRequest request,
+              HttpServletResponse response)
+              throws IOException, ServletException {
+            final String method = baseRequest.getParameter("method");
+            if ("helloworld.Greeter/SayHello".equals(method)) {
+              baseRequest.setHandled(true);
+              sayHello(baseRequest, response);
+            }
+          }
+        });
 
     final ServerConnector connector = new ServerConnector(server);
     connector.setPort(port);
     server.addConnector(connector);
-
   }
 
   private void start() throws Exception {
@@ -73,8 +76,7 @@ class LegacyHttpServer {
     }
   }
 
-  private void sayHello(Request request, HttpServletResponse response)
-      throws IOException {
+  private void sayHello(Request request, HttpServletResponse response) throws IOException {
     final HelloRequest req = HelloRequest.parseFrom(request.getInputStream());
     final String greeting = "Hello " + req.getName();
     final HelloReply resp = HelloReply.newBuilder().setMessage(greeting).build();
@@ -84,9 +86,16 @@ class LegacyHttpServer {
   @Command(name = "http", description = "Run a legacy HTTP/Protobuf HelloWorld service.")
   public static class Cmd implements Runnable {
 
-    @Option(name = {"-p", "--port"}, description = "the port to listen on")
+    @Option(
+      name = {"-p", "--port"},
+      description = "the port to listen on"
+    )
     private int port = 8080;
-    @Option(name = {"-c", "--threads"}, description = "the number of worker threads to use")
+
+    @Option(
+      name = {"-c", "--threads"},
+      description = "the number of worker threads to use"
+    )
     private int threads = 100;
 
     @Override

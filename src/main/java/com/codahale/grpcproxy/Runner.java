@@ -30,18 +30,20 @@ public class Runner {
   private static Cli<Runnable> cli() {
     final CliBuilder<Runnable> builder = Cli.builder("grpc-proxy");
 
-    builder.withDescription("A set of example services for testing a gRPC proxy service.")
-           .withDefaultCommand(Help.class)
-           .withCommand(Help.class)
-           .withCommand(HelloWorldClient.Cmd.class);
+    builder
+        .withDescription("A set of example services for testing a gRPC proxy service.")
+        .withDefaultCommand(Help.class)
+        .withCommand(Help.class)
+        .withCommand(HelloWorldClient.Cmd.class);
 
-    builder.withGroup("server")
-           .withDescription("Run a server")
-           .withDefaultCommand(Help.class)
-           .withCommand(Help.class)
-           .withCommand(ProxyRpcServer.Cmd.class)
-           .withCommand(LegacyHttpServer.Cmd.class)
-           .withCommand(HelloWorldServer.Cmd.class);
+    builder
+        .withGroup("server")
+        .withDescription("Run a server")
+        .withDefaultCommand(Help.class)
+        .withCommand(Help.class)
+        .withCommand(ProxyRpcServer.Cmd.class)
+        .withCommand(LegacyHttpServer.Cmd.class)
+        .withCommand(HelloWorldServer.Cmd.class);
 
     return builder.build();
   }

@@ -36,9 +36,7 @@ import net.logstash.logback.marker.Markers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A gRPC client. This could be in any language.
- */
+/** A gRPC client. This could be in any language. */
 class HelloWorldClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldClient.class);
@@ -48,11 +46,12 @@ class HelloWorldClient {
 
   private HelloWorldClient(String host, int port, TlsContext tls) throws SSLException {
     this.eventLoopGroup = Netty.newWorkerEventLoopGroup();
-    this.channel = NettyChannelBuilder.forAddress(host, port)
-                                      .eventLoopGroup(eventLoopGroup)
-                                      .channelType(Netty.clientChannelType())
-                                      .sslContext(tls.toClientContext())
-                                      .build();
+    this.channel =
+        NettyChannelBuilder.forAddress(host, port)
+            .eventLoopGroup(eventLoopGroup)
+            .channelType(Netty.clientChannelType())
+            .sslContext(tls.toClientContext())
+            .build();
     this.blockingStub = GreeterGrpc.newBlockingStub(channel);
   }
 
@@ -74,18 +73,36 @@ class HelloWorldClient {
   @Command(name = "client", description = "Runs a bunch of HelloWorld client calls.")
   public static class Cmd implements Runnable {
 
-    @Option(name = {"-h", "--hostname"}, description = "the hostname of the gRPC server")
+    @Option(
+      name = {"-h", "--hostname"},
+      description = "the hostname of the gRPC server"
+    )
     private String hostname = "localhost";
-    @Option(name = {"-p", "--port"}, description = "the port of the gRPC server")
+
+    @Option(
+      name = {"-p", "--port"},
+      description = "the port of the gRPC server"
+    )
     private int port = 50051;
-    @Option(name = {"-n", "--requests"}, description = "the number of requests to make")
+
+    @Option(
+      name = {"-n", "--requests"},
+      description = "the number of requests to make"
+    )
     private int requests = 1_000_000;
-    @Option(name = {"-c", "--threads"}, description = "the number of threads to use")
+
+    @Option(
+      name = {"-c", "--threads"},
+      description = "the number of threads to use"
+    )
     private int threads = 10;
+
     @Option(name = "--ca-certs")
     private String trustedCertsPath = "cert.crt";
+
     @Option(name = "--cert")
     private String certPath = "cert.crt";
+
     @Option(name = "--key")
     private String keyPath = "cert.key";
 
@@ -95,30 +112,38 @@ class HelloWorldClient {
         final TlsContext tls = new TlsContext(trustedCertsPath, certPath, keyPath);
         final HelloWorldClient client = new HelloWorldClient(hostname, port, tls);
         try {
-          final Recorder recorder = new Recorder(500, TimeUnit.MINUTES.toMicros(1),
-              TimeUnit.MILLISECONDS.toMicros(10), TimeUnit.MICROSECONDS);
+          final Recorder recorder =
+              new Recorder(
+                  500,
+                  TimeUnit.MINUTES.toMicros(1),
+                  TimeUnit.MILLISECONDS.toMicros(10),
+                  TimeUnit.MICROSECONDS);
           LOGGER.info("Initial request: {}", client.greet(requests));
           LOGGER.info("Sending {} requests from {} threads", requests, threads);
 
           final ExecutorService threadPool = Executors.newFixedThreadPool(threads);
           final Instant start = Instant.now();
           for (int i = 0; i < threads; i++) {
-            threadPool.execute(() -> {
-              for (int j = 0; j < requests / threads; j++) {
-                final long t = System.nanoTime();
-                client.greet(j);
-                recorder.record(t);
-              }
-            });
+            threadPool.execute(
+                () -> {
+                  for (int j = 0; j < requests / threads; j++) {
+                    final long t = System.nanoTime();
+                    client.greet(j);
+                    recorder.record(t);
+                  }
+                });
           }
           threadPool.shutdown();
           threadPool.awaitTermination(20, TimeUnit.MINUTES);
 
           final Snapshot stats = recorder.interval();
           final Duration duration = Duration.between(start, Instant.now());
-          LOGGER.info(Markers.append("stats", stats)
-                             .and(Markers.append("duration", duration.toString())),
-              "{} requests in {} ({} req/sec)", stats.count(), duration, stats.throughput());
+          LOGGER.info(
+              Markers.append("stats", stats).and(Markers.append("duration", duration.toString())),
+              "{} requests in {} ({} req/sec)",
+              stats.count(),
+              duration,
+              stats.throughput());
         } finally {
           client.shutdown();
         }

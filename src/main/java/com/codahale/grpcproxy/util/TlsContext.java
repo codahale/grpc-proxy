@@ -45,15 +45,15 @@ public class TlsContext {
 
   public SslContext toClientContext() throws SSLException {
     return GrpcSslContexts.configure(SslContextBuilder.forClient(), SslProvider.OPENSSL)
-                          .trustManager(trustedCerts)
-                          .keyManager(cert, key)
-                          .build();
+        .trustManager(trustedCerts)
+        .keyManager(cert, key)
+        .build();
   }
 
   public SslContext toServerContext() throws SSLException {
     return GrpcSslContexts.configure(SslContextBuilder.forServer(cert, key), SslProvider.OPENSSL)
-                          .trustManager(trustedCerts)
-                          .clientAuth(ClientAuth.REQUIRE)
-                          .build();
+        .trustManager(trustedCerts)
+        .clientAuth(ClientAuth.REQUIRE)
+        .build();
   }
 }

@@ -33,8 +33,9 @@ public class Recorder {
     this.goalLatency = latencyUnit.toMicros(goalLatency);
     this.count = new IntervalAdder();
     this.responseTime = new IntervalAdder();
-    this.latency = new org.HdrHistogram.Recorder(latencyUnit.toMicros(minLatency),
-        latencyUnit.toMicros(maxLatency), 1);
+    this.latency =
+        new org.HdrHistogram.Recorder(
+            latencyUnit.toMicros(minLatency), latencyUnit.toMicros(maxLatency), 1);
     this.histogram = latency.getIntervalHistogram(); // preload reporting histogram
   }
 

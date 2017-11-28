@@ -20,9 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * A dumb marshaller which refuses to marshal.
- */
+/** A dumb marshaller which refuses to marshal. */
 public class ByteArrayMarshaller implements Marshaller<byte[]> {
 
   @Override

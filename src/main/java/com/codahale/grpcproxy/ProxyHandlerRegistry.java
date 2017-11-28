@@ -33,9 +33,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-/**
- * A handler registry which maps gRPC service methods to proxy listeners.
- */
+/** A handler registry which maps gRPC service methods to proxy listeners. */
 class ProxyHandlerRegistry extends HandlerRegistry {
 
   private static final MediaType OCTET_STREAM = MediaType.parse("application/octet-stream");
@@ -49,8 +47,7 @@ class ProxyHandlerRegistry extends HandlerRegistry {
   }
 
   @Override
-  public ServerMethodDefinition<?, ?> lookupMethod(String methodName,
-      @Nullable String authority) {
+  public ServerMethodDefinition<?, ?> lookupMethod(String methodName, @Nullable String authority) {
     return ServerMethodDefinition.create(
         MethodDescriptor.<byte[], byte[]>newBuilder()
             .setRequestMarshaller(new ByteArrayMarshaller())
@@ -61,9 +58,7 @@ class ProxyHandlerRegistry extends HandlerRegistry {
         ServerCalls.asyncUnaryCall(new ProxyUnaryMethod(backend, methodName)));
   }
 
-  /**
-   * Proxies a gRPC request to an HTTP backend.
-   */
+  /** Proxies a gRPC request to an HTTP backend. */
   private class ProxyUnaryMethod implements ServerCalls.UnaryMethod<byte[], byte[]> {
 
     private final HttpUrl url;
