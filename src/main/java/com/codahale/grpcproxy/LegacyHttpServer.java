@@ -19,7 +19,6 @@ import com.codahale.grpcproxy.helloworld.HelloRequest;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import java.io.IOException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
@@ -39,7 +38,7 @@ class LegacyHttpServer {
   private static final Logger LOGGER = LoggerFactory.getLogger(LegacyHttpServer.class);
   private final Server server;
 
-  LegacyHttpServer(int port, int threads) {
+  private LegacyHttpServer(int port, int threads) {
     this.server = new Server(new QueuedThreadPool(threads));
     server.setHandler(
         new AbstractHandler() {
@@ -49,7 +48,7 @@ class LegacyHttpServer {
               Request baseRequest,
               HttpServletRequest request,
               HttpServletResponse response)
-              throws IOException, ServletException {
+              throws IOException {
             final String method = baseRequest.getParameter("method");
             if ("helloworld.Greeter/SayHello".equals(method)) {
               baseRequest.setHandled(true);
