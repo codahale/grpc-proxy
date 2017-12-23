@@ -157,7 +157,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>23.5-jre</version>
+      <version>23.6-jre</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -167,7 +167,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>3.5.0</version>
+      <version>3.5.1</version>
     </dependency>
   </dependencies>
   <build>
